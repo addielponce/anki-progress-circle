@@ -1,0 +1,68 @@
+<!doctype html>
+<html>
+    <head>
+        <style>
+            * {{
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }}
+
+            html, body {{
+                width: 100%;
+                height: 100%;
+                overflow: hidden;
+                background: transparent;
+            }}
+
+            body {{
+                display: flex;
+                justify-content: center;
+                align-items: center;
+            }}
+
+            .progress-container {{
+                width: 95vmin;
+                height: 95vmin;
+                max-width: 95vh;
+                max-height: 95vh;
+            }}
+
+            svg {{
+                width: 100%;
+                height: 100%;
+                transform: rotate(-90deg);
+                filter: drop-shadow(0 4px 20px rgba(0, 0, 0, 0.3));
+            }}
+        </style>
+    </head>
+    <body>
+        <div class="progress-container">
+            <svg viewBox="0 0 100 100">
+                <!-- Background circle ⚫ -->
+                <circle
+                    stroke="rgba(0, 0, 0, 0.3)"
+                    stroke-width="8"
+                    fill="transparent"
+                    stroke-linecap="butt"
+                    cx="50"
+                    cy="50"
+                    r="{radius}"
+                />
+                <!-- Progress circle 🟢 -->
+                <circle
+                    class="progress-ring"
+                    stroke="{color}"
+                    stroke-width="8"
+                    fill="transparent"
+                    stroke-dasharray="{circumference}"
+                    stroke-dashoffset="{dash_offset}"
+                    stroke-linecap="butt"
+                    cx="50"
+                    cy="50"
+                    r="{radius}"
+                />
+            </svg>
+        </div>
+    </body>
+</html>
