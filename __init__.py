@@ -20,7 +20,7 @@
 from pathlib import Path
 
 from aqt import gui_hooks, mw
-from aqt.qt import QDialog, Qt, QVBoxLayout, QWebEngineView
+from aqt.qt import QDialog, QMenu, Qt, QVBoxLayout, QWebEngineView
 
 # TODO: Add color picker
 COLOR = "LimeGreen"
@@ -116,8 +116,8 @@ def get_current_progress():
     return done, total, percent
 
 
-def show_progress_window():
-    """Show or update the progress window"""
+def toggle_progress_window():
+    """Show or hide the progress window"""
 
     global progress_window
 
@@ -128,8 +128,11 @@ def show_progress_window():
     done, total, percent = get_current_progress()
 
     progress_window.update_progress(done, total, percent)
-    progress_window.showMaximized()
-    progress_window.raise_()
+
+    if not progress_window.isVisible():
+        progress_window.showMaximized()
+    else:
+        progress_window.close()
 
 
 def update_progress():
@@ -151,8 +154,10 @@ def on_show_question(*args, **kwargs):
 
 def add_menu_entry():
     """Add menu item in Tools"""
-    action = mw.form.menuTools.addAction("Show Circular Progress ⭕")
-    action.triggered.connect(show_progress_window)
+    menu = QMenu("Circular progress ⭕", mw)
+    mw.form.menuTools.addMenu(menu)
+    action = menu.addAction("Toggle circular progress")
+    action.triggered.connect(toggle_progress_window)
 
 
 # Hooks
