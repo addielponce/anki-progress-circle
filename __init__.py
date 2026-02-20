@@ -22,6 +22,10 @@ from pathlib import Path
 from aqt import gui_hooks, mw
 from aqt.qt import QDialog, QMenu, Qt, QVBoxLayout, QWebEngineView
 
+from . import settings_gui
+
+mw.addonManager.setConfigAction(__name__, settings_gui.open_settings)
+
 
 def get_config():
     return mw.addonManager.getConfig(__name__)
@@ -76,6 +80,9 @@ class ProgressWindow(QDialog):
         dash_offset = circumference * (1 - percent / 100)
 
         # Replace fields in "html_circle.html"
+
+        # Should I use get_config()["color"] instead?
+
         html_content = HTML.format(
             radius=radius,
             circumference=circumference,
