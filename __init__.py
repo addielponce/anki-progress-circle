@@ -22,15 +22,24 @@ from pathlib import Path
 from aqt import gui_hooks, mw
 from aqt.qt import QDialog, QMenu, Qt, QVBoxLayout, QWebEngineView
 
-# TODO: Add color picker
-COLOR = "LimeGreen"
 
-# Circle properties
-RADIUS = 45
-CIRCUMFERENCE = 2 * 3.1416 * RADIUS
+def get_config():
+    return mw.addonManager.getConfig(__name__)
+
 
 # HTML template for the circle
 HTML = (Path(__file__).parent / "html_circle.html").read_text()
+
+# Configuration
+config = get_config()
+
+main_color = config["main_color"]
+back_color = config["back_color"]
+resize = config["resize"]
+
+# Circle properties
+radius = 45 * resize
+circumference = 2 * 3.1416 * radius
 
 
 class ProgressWindow(QDialog):
@@ -63,15 +72,15 @@ class ProgressWindow(QDialog):
     def update_progress(self, done, total, percent):
         """Update the progress circle using SVG"""
 
-        # Green progress circle
-        dash_offset = CIRCUMFERENCE * (1 - percent / 100)
+        # Completed cards
+        dash_offset = circumference * (1 - percent / 100)
 
         # Replace fields in "html_circle.html"
         html_content = HTML.format(
-            radius=RADIUS,
-            circumference=CIRCUMFERENCE,
+            radius=radius,
+            circumference=circumference,
             dash_offset=dash_offset,  # Progress ⭕
-            color=COLOR,
+            color=main_color,
             # done=done,
             # total=total,
             # percent=percent,
@@ -164,3 +173,6 @@ def add_menu_entry():
 gui_hooks.state_did_change.append(on_state_change)
 gui_hooks.reviewer_did_show_question.append(on_show_question)
 gui_hooks.main_window_did_init.append(add_menu_entry)
+
+
+# TODO: Add color picker
