@@ -12,43 +12,67 @@ from aqt.qt import (
     QVBoxLayout,
 )
 
+PACKAGE_NAME = "anki-progress-circle"  # hardcoded for now
+
+
+def get_config():
+    package = PACKAGE_NAME  # "anki-progress-circle"
+    return mw.addonManager.getConfig(package)
+
 
 class SettingsDialog(QDialog):
     def __init__(self):
         super().__init__(mw)
         self.setWindowTitle("Circle settings")
-        self.config = mw.addonManager.getConfig(__name__)
+        self.config = mw.addonManager.getConfig(PACKAGE_NAME)
         self._build_ui()
 
     def _build_ui(self):
-        main_layout = QVBoxLayout()  #
-        form = QHBoxLayout()
+        main_layout = QVBoxLayout()
 
         # ================================================
         #                     Widgets
         # ================================================
 
-        self.color_edit = QLineEdit(self.config.get("color", ""))
+        # Create widgets ==>
 
-        color_btn = QPushButton("Pick Color")
-        color_btn.clicked.connect(pick_color)
+        first_row_layout = QHBoxLayout()
+
+        # Label
+        self.color_label = QLabel("Pick main color:")
+
+        # Create a class later
+        main_color_button = QPushButton()
+        main_color_button.setFixedHeight(  # make it small
+            main_color_button.sizeHint().height() - 6,
+        )
+
+        main_color_button.setStyleSheet(
+            f"background-color: {get_config()['main_color']};"
+        )
 
         def pick_color():
             color = QColorDialog.getColor(
-                QColor(self.color_edit.text()),
+                QColor(self.color_label.text()),
                 self,
                 "Main circle color properties",
                 QColorDialog.ColorDialogOption.ShowAlphaChannel,
             )
 
             if color.isValid():
-                # TODO: Set config values using color.alpha() etc
-                self.color_edit.setText(color.name(QColor.NameFormat.HexArgb))
+                main_color_button.setStyleSheet(
+                    f"background-color: {color.name(QColor.NameFormat.HexRgb)};"
+                )
+                main_color_button.update()
 
-        form.addWidget(self.color_edit)
-        form.addWidget(color_btn)
+        main_color_button.clicked.connect(pick_color)
 
-        main_layout.addLayout(form)
+        # Add widgets ==>
+
+        first_row_layout.addWidget(self.color_label)  # Manual entry
+        first_row_layout.addWidget(main_color_button)  # Color picker button
+
+        main_layout.addLayout(first_row_layout)
 
         # =============================================
         #                   Buttons
@@ -71,15 +95,16 @@ class SettingsDialog(QDialog):
 
         # Add layouts
         main_layout.addLayout(buttons)
+        main_layout.addStretch()
 
         self.setLayout(main_layout)
 
     def _save(self):
-        mw.addonManager.writeConfig(__name__, self.config)
+        mw.addonManager.writeConfig(PACKAGE_NAME, self.config)
         self.accept()
 
     def _restore_defaults(self):
-        defaults = mw.addonManager.addonConfigDefaults(__name__)
+        defaults = mw.addonManager.addonConfigDefaults(PACKAGE_NAME)
         if defaults:
             self.config = defaults
 
