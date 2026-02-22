@@ -95,6 +95,9 @@ class SettingsDialog(QDialog):
         self.config["main_color_transparency"] = self.transparency_spin.value()
         mw.addonManager.writeConfig(PACKAGE_NAME, self.config)
         self.accept()
+        from . import update_progress
+
+        update_progress()
 
     def _restore_defaults(self):
         defaults = mw.addonManager.addonConfigDefaults(PACKAGE_NAME)
