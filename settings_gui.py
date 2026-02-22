@@ -42,17 +42,17 @@ class SettingsDialog(QDialog):
         self._update_color_button(self.config["main_color"])
         self.main_color_button.clicked.connect(self._pick_color)
 
-        alpha_label = QLabel("Transparency:")
-        self.transparency_spin = QSpinBox()
-        self.transparency_spin.setRange(0, 100)
-        self.transparency_spin.setSingleStep(5)
-        self.transparency_spin.setSuffix("%")
-        self.transparency_spin.setValue(self.config.get("main_color_transparency", 100))
+        alpha_label = QLabel("Opacity:")
+        self.opacity_spin = QSpinBox()
+        self.opacity_spin.setRange(0, 100)
+        self.opacity_spin.setSingleStep(5)
+        self.opacity_spin.setSuffix("%")
+        self.opacity_spin.setValue(self.config.get("main_color_opacity", 100))
 
         first_row_layout.addWidget(color_label)
         first_row_layout.addWidget(self.main_color_button)
         first_row_layout.addWidget(alpha_label)
-        first_row_layout.addWidget(self.transparency_spin)
+        first_row_layout.addWidget(self.opacity_spin)
         main_layout.addLayout(first_row_layout)
 
         # =============================================
@@ -92,13 +92,13 @@ class SettingsDialog(QDialog):
             self._update_color_button(color.name(QColor.NameFormat.HexRgb))
 
     def _save(self):
-        alpha = int(self.transparency_spin.value() / 100 * 255)
+        alpha = int(self.opacity_spin.value() / 100 * 255)
         color = QColor(self.config["main_color"])
         color.setAlpha(alpha)
         self.config["main_color"] = (
-            f"rgba({color.red()}, {color.green()}, {color.blue()}, {self.transparency_spin.value() / 100})"
+            f"rgba({color.red()}, {color.green()}, {color.blue()}, {self.opacity_spin.value() / 100})"
         )
-        self.config["main_color_transparency"] = self.transparency_spin.value()
+        self.config["main_color_opacity"] = self.opacity_spin.value()
         mw.addonManager.writeConfig(PACKAGE_NAME, self.config)
         self.accept()
         from . import update_progress
@@ -110,9 +110,7 @@ class SettingsDialog(QDialog):
         if defaults:
             self.config = defaults
             self._update_color_button(defaults["main_color"])
-            self.transparency_spin.setValue(
-                defaults.get("main_color_transparency", 100)
-            )
+            self.opacity_spin.setValue(defaults.get("main_color_opacity", 100))
 
 
 def open_settings():
