@@ -41,19 +41,18 @@ class SettingsDialog(QDialog):
         # Label
         self.color_label = QLabel("Pick main color:")
 
-        # Create a class later
         main_color_button = QPushButton()
         main_color_button.setFixedHeight(  # make it small
             main_color_button.sizeHint().height() - 6,
         )
 
         main_color_button.setStyleSheet(
-            f"background-color: {get_config()['main_color']};"
+            f"background-color: {self.config['main_color']};"
         )
 
         alpha_label = QLabel("Transparency:")
-        transparency_spin = QSpinBox()
 
+        transparency_spin = QSpinBox()
         transparency_spin.setMinimum(0)
         transparency_spin.setMaximum(100)
         transparency_spin.setValue(100)
@@ -62,9 +61,8 @@ class SettingsDialog(QDialog):
 
         def pick_color():
             color = QColorDialog.getColor(
-                QColor(get_config()["main_color"]), self, "Main circle color properties"
+                QColor(self.config["main_color"]), self, "Main circle color properties"
             )
-
             if color.isValid():
                 main_color_button.setStyleSheet(
                     f"background-color: {color.name(QColor.NameFormat.HexRgb)};"
@@ -75,8 +73,8 @@ class SettingsDialog(QDialog):
 
         # Add widgets ==>
 
-        first_row_layout.addWidget(self.color_label)  # Manual entry
-        first_row_layout.addWidget(main_color_button)  # Color picker button
+        first_row_layout.addWidget(color_label)
+        first_row_layout.addWidget(main_color_button)
         first_row_layout.addWidget(alpha_label)
         first_row_layout.addWidget(transparency_spin)
 
