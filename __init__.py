@@ -34,9 +34,6 @@ def get_config():
 # HTML template for the circle
 HTML = (Path(__file__).parent / "html_circle.html").read_text()
 
-# Configuration
-config = get_config()
-
 
 # Circle properties
 radius = 45
