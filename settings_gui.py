@@ -48,6 +48,7 @@ class SettingsDialog(QDialog):
         self.opacity_spin.setSingleStep(5)
         self.opacity_spin.setSuffix("%")
         self.opacity_spin.setValue(self.config.get("main_color_opacity", 100))
+        self.opacity_spin.valueChanged.connect(self._refresh_button)
 
         first_row_layout.addWidget(color_label)
         first_row_layout.addWidget(self.main_color_button)
@@ -83,6 +84,13 @@ class SettingsDialog(QDialog):
     def _update_color_button(self, hex_color):
         self.main_color_button.setStyleSheet(f"background-color: {hex_color};")
         self.config["main_color"] = hex_color
+
+    def _refresh_button(self):
+        opacity = self.opacity_spin.value() / 100
+        color = QColor(self.config["main_color"])
+        self.main_color_button.setStyleSheet(
+            f"background-color: rgba({color.red()}, {color.green()}, {color.blue()}, {opacity});"
+        )
 
     def _pick_color(self):
         color = QColorDialog.getColor(
