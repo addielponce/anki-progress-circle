@@ -37,12 +37,9 @@ HTML = (Path(__file__).parent / "html_circle.html").read_text()
 # Configuration
 config = get_config()
 
-main_color = config["main_color"]
-back_color = config["back_color"]
-resize = config["resize"]
 
 # Circle properties
-radius = 45 * resize
+radius = 45
 circumference = 2 * 3.1416 * radius
 
 
@@ -87,7 +84,7 @@ class ProgressWindow(QDialog):
             radius=radius,
             circumference=circumference,
             dash_offset=dash_offset,  # Progress ⭕
-            color=main_color,
+            color=get_config()["main_color"],
             # done=done,
             # total=total,
             # percent=percent,
