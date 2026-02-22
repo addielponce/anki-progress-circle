@@ -57,8 +57,9 @@ class SettingsDialog(QDialog):
         transparency_spin.setMinimum(0)
         transparency_spin.setMaximum(100)
         transparency_spin.setValue(100)
+        transparency_spin.setSingleStep(5)
         transparency_spin.setSuffix("%")
-        
+
         def pick_color():
             color = QColorDialog.getColor(
                 QColor(get_config()["main_color"]), self, "Main circle color properties"
@@ -78,7 +79,7 @@ class SettingsDialog(QDialog):
         first_row_layout.addWidget(main_color_button)  # Color picker button
         first_row_layout.addWidget(alpha_label)
         first_row_layout.addWidget(transparency_spin)
-        
+
         main_layout.addLayout(first_row_layout)
 
         # =============================================
