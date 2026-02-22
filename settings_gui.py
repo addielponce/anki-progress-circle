@@ -92,6 +92,12 @@ class SettingsDialog(QDialog):
             self._update_color_button(color.name(QColor.NameFormat.HexRgb))
 
     def _save(self):
+        alpha = int(self.transparency_spin.value() / 100 * 255)
+        color = QColor(self.config["main_color"])
+        color.setAlpha(alpha)
+        self.config["main_color"] = (
+            f"rgba({color.red()}, {color.green()}, {color.blue()}, {self.transparency_spin.value() / 100})"
+        )
         self.config["main_color_transparency"] = self.transparency_spin.value()
         mw.addonManager.writeConfig(PACKAGE_NAME, self.config)
         self.accept()
@@ -104,6 +110,9 @@ class SettingsDialog(QDialog):
         if defaults:
             self.config = defaults
             self._update_color_button(defaults["main_color"])
+            self.transparency_spin.setValue(
+                defaults.get("main_color_transparency", 100)
+            )
 
 
 def open_settings():
