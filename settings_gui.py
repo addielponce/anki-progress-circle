@@ -12,12 +12,7 @@ from aqt.qt import (
     QVBoxLayout,
 )
 
-PACKAGE_NAME = "anki-progress-circle"  # hardcoded for now
-
-
-def get_config():
-    package = PACKAGE_NAME  # "anki-progress-circle"
-    return mw.addonManager.getConfig(package)
+PACKAGE_NAME = "anki-progress-circle"
 
 
 class SettingsDialog(QDialog):
@@ -40,44 +35,24 @@ class SettingsDialog(QDialog):
 
         # Label
         color_label = QLabel("Pick main color:")
-
-        main_color_button = QPushButton()
-        main_color_button.setFixedHeight(  # make it small
-            main_color_button.sizeHint().height() - 6,
+        self.main_color_button = QPushButton()
+        self.main_color_button.setFixedHeight(
+            self.main_color_button.sizeHint().height() - 6  # make it small
         )
-
-        main_color_button.setStyleSheet(
-            f"background-color: {self.config['main_color']};"
-        )
+        self._update_color_button(self.config["main_color"])
+        self.main_color_button.clicked.connect(self._pick_color)
 
         alpha_label = QLabel("Transparency:")
-
-        transparency_spin = QSpinBox()
-        transparency_spin.setMinimum(0)
-        transparency_spin.setMaximum(100)
-        transparency_spin.setValue(100)
-        transparency_spin.setSingleStep(5)
-        transparency_spin.setSuffix("%")
-
-        def pick_color():
-            color = QColorDialog.getColor(
-                QColor(self.config["main_color"]), self, "Main circle color properties"
-            )
-            if color.isValid():
-                main_color_button.setStyleSheet(
-                    f"background-color: {color.name(QColor.NameFormat.HexRgb)};"
-                )
-                main_color_button.update()
-
-        main_color_button.clicked.connect(pick_color)
-
-        # Add widgets ==>
+        self.transparency_spin = QSpinBox()
+        self.transparency_spin.setRange(0, 100)
+        self.transparency_spin.setSingleStep(5)
+        self.transparency_spin.setSuffix("%")
+        self.transparency_spin.setValue(self.config.get("main_color_transparency", 100))
 
         first_row_layout.addWidget(color_label)
-        first_row_layout.addWidget(main_color_button)
+        first_row_layout.addWidget(self.main_color_button)
         first_row_layout.addWidget(alpha_label)
-        first_row_layout.addWidget(transparency_spin)
-
+        first_row_layout.addWidget(self.transparency_spin)
         main_layout.addLayout(first_row_layout)
 
         # =============================================
@@ -105,7 +80,19 @@ class SettingsDialog(QDialog):
 
         self.setLayout(main_layout)
 
+    def _update_color_button(self, hex_color):
+        self.main_color_button.setStyleSheet(f"background-color: {hex_color};")
+        self.config["main_color"] = hex_color
+
+    def _pick_color(self):
+        color = QColorDialog.getColor(
+            QColor(self.config["main_color"]), self, "Main circle color properties"
+        )
+        if color.isValid():
+            self._update_color_button(color.name(QColor.NameFormat.HexRgb))
+
     def _save(self):
+        self.config["main_color_transparency"] = self.transparency_spin.value()
         mw.addonManager.writeConfig(PACKAGE_NAME, self.config)
         self.accept()
 
