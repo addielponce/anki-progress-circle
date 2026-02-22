@@ -165,18 +165,34 @@ def on_show_question(*args, **kwargs):
     update_progress()
 
 
-def add_menu_entry():
+def move_progress_window():
+    if progress_window:
+        pass
+
+
+def resize_progress_window():
+    if progress_window:
+        pass
+
+
+def add_menu_entries():
     """Add menu item in Tools"""
     menu = QMenu("Circular progress ⭕", mw)
     mw.form.menuTools.addMenu(menu)
-    action = menu.addAction("Toggle circular progress")
-    action.triggered.connect(toggle_progress_window)
+
+    toggle = menu.addAction("Toggle circular progress")
+    scale = menu.addAction("Resize circular progress")
+    move = menu.addAction("Move circular progress")
+
+    toggle.triggered.connect(toggle_progress_window)
+    move.triggered.connect(move_progress_window)
+    scale.triggered.connect(resize_progress_window)
 
 
 # Hooks
 gui_hooks.state_did_change.append(on_state_change)
 gui_hooks.reviewer_did_show_question.append(on_show_question)
-gui_hooks.main_window_did_init.append(add_menu_entry)
+gui_hooks.main_window_did_init.append(add_menu_entries)
 
 
 # TODO: Add color picker
