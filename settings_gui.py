@@ -22,7 +22,7 @@ def get_config():
 
 class SettingsDialog(QDialog):
     def __init__(self):
-        super().__init__(mw)
+        super().__init__()
         self.setWindowTitle("Circle settings")
         self.config = mw.addonManager.getConfig(PACKAGE_NAME)
         self._build_ui()
@@ -39,7 +39,7 @@ class SettingsDialog(QDialog):
         first_row_layout = QHBoxLayout()
 
         # Label
-        self.color_label = QLabel("Pick main color:")
+        color_label = QLabel("Pick main color:")
 
         main_color_button = QPushButton()
         main_color_button.setFixedHeight(  # make it small
