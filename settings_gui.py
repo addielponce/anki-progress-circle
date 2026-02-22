@@ -100,8 +100,7 @@ class SettingsDialog(QDialog):
         defaults = mw.addonManager.addonConfigDefaults(PACKAGE_NAME)
         if defaults:
             self.config = defaults
-
-            # TODO: update widgets
+            self._update_color_button(defaults["main_color"])
 
 
 def open_settings():
