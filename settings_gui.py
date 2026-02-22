@@ -20,6 +20,7 @@ class SettingsDialog(QDialog):
         super().__init__()
         self.setWindowTitle("Circle settings")
         self.config = mw.addonManager.getConfig(PACKAGE_NAME)
+        self._color = QColor(self.config["main_color"])
         self._build_ui()
 
     def _build_ui(self):
@@ -39,7 +40,6 @@ class SettingsDialog(QDialog):
         self.main_color_button.setFixedHeight(
             self.main_color_button.sizeHint().height() - 6  # make it small
         )
-        self._update_color_button(self.config["main_color"])
         self.main_color_button.clicked.connect(self._pick_color)
 
         alpha_label = QLabel("Opacity:")
@@ -59,8 +59,9 @@ class SettingsDialog(QDialog):
         # =============================================
         #                   Buttons
         # =============================================
-        buttons = QHBoxLayout()
+        self._refresh_button()
 
+        buttons = QHBoxLayout()
         save = QPushButton("Save")
         cancel = QPushButton("Cancel")
         defaults = QPushButton("Restore Defaults")
@@ -81,31 +82,21 @@ class SettingsDialog(QDialog):
 
         self.setLayout(main_layout)
 
-    def _update_color_button(self, hex_color):
-        self.main_color_button.setStyleSheet(f"background-color: {hex_color};")
-        self.config["main_color"] = hex_color
-
     def _refresh_button(self):
         opacity = self.opacity_spin.value() / 100
-        color = QColor(self.config["main_color"])
+        r, g, b = self._color.red(), self._color.green(), self._color.blue()
         self.main_color_button.setStyleSheet(
-            f"background-color: rgba({color.red()}, {color.green()}, {color.blue()}, {opacity});"
+            f"background-color: rgba({r}, {g}, {b}, {opacity});"
         )
 
     def _pick_color(self):
-        color = QColorDialog.getColor(
-            QColor(self.config["main_color"]), self, "Main circle color properties"
-        )
+        color = QColorDialog.getColor(self._color, self, "Main circle color")
         if color.isValid():
-            self._update_color_button(color.name(QColor.NameFormat.HexRgb))
+            self._color = color
+            self._refresh_button()
 
     def _save(self):
-        alpha = int(self.opacity_spin.value() / 100 * 255)
-        color = QColor(self.config["main_color"])
-        color.setAlpha(alpha)
-        self.config["main_color"] = (
-            f"rgba({color.red()}, {color.green()}, {color.blue()}, {self.opacity_spin.value() / 100})"
-        )
+        self.config["main_color"] = self._color.name(QColor.NameFormat.HexRgb)
         self.config["main_color_opacity"] = self.opacity_spin.value()
         mw.addonManager.writeConfig(PACKAGE_NAME, self.config)
         self.accept()
@@ -117,8 +108,9 @@ class SettingsDialog(QDialog):
         defaults = mw.addonManager.addonConfigDefaults(PACKAGE_NAME)
         if defaults:
             self.config = defaults
-            self._update_color_button(defaults["main_color"])
+            self._color = QColor(defaults["main_color"])
             self.opacity_spin.setValue(defaults.get("main_color_opacity", 100))
+            self._refresh_button()
 
 
 def open_settings():

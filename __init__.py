@@ -80,8 +80,9 @@ class ProgressWindow(QDialog):
         html_content = HTML.format(
             radius=radius,
             circumference=circumference,
-            dash_offset=dash_offset,  # Progress ⭕
+            dash_offset=dash_offset,
             color=get_config()["main_color"],
+            opacity=get_config()["main_color_opacity"] / 100,
             # done=done,
             # total=total,
             # percent=percent,
