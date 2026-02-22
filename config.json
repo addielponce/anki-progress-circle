@@ -1,5 +1,5 @@
 {
-  "main_color": "LimeGreen",
+  "main_color": "rgba(50, 205, 50, 1)",
   "back_color": "rgba(0, 0, 0, 0.3)",
   "resize": 1
 }
