@@ -61,10 +61,7 @@ class SettingsDialog(QDialog):
         
         def pick_color():
             color = QColorDialog.getColor(
-                QColor(self.color_label.text()),
-                self,
-                "Main circle color properties",
-                QColorDialog.ColorDialogOption.ShowAlphaChannel,
+                QColor(get_config()["main_color"]), self, "Main circle color properties"
             )
 
             if color.isValid():
