@@ -177,6 +177,3 @@ def add_menu_entry():
 gui_hooks.state_did_change.append(on_state_change)
 gui_hooks.reviewer_did_show_question.append(on_show_question)
 gui_hooks.main_window_did_init.append(add_menu_entry)
-
-
-# TODO: Add color picker
