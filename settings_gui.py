@@ -125,6 +125,8 @@ class SettingsDialog(QDialog):
     def _save(self):
         self.config["main_color"] = self.main_color_picker.color
         self.config["main_color_opacity"] = self.main_color_picker.opacity
+        self.config["back_color"] = self.back_color_picker.color
+        self.config["back_color_opacity"] = self.back_color_picker.opacity
         mw.addonManager.writeConfig(PACKAGE_NAME, self.config)
         self.accept()
         from . import update_progress

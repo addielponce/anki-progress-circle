@@ -41,7 +41,8 @@
             <svg viewBox="0 0 100 100">
                 <!-- Background circle ⚫ -->
                 <circle
-                    stroke="rgba(0, 0, 0, 0.3)"
+                    stroke="{back_color}"
+                    stroke-opacity="{back_color_opacity}"
                     stroke-width="8"
                     fill="transparent"
                     stroke-linecap="butt"
@@ -52,8 +53,8 @@
                 <!-- Progress circle 🟢 -->
                 <circle
                     class="progress-ring"
-                    stroke="{color}"
-                    stroke-opacity="{opacity}"
+                    stroke="{main_color}"
+                    stroke-opacity="{main_color_opacity}"
                     stroke-width="8"
                     fill="transparent"
                     stroke-dasharray="{circumference}"

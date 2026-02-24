@@ -2,7 +2,7 @@
   "main_color": "#32cd32",
   "main_color_opacity": 100,
   "main_circle_stroke_width": 8,
-  "back_color": "rgba(0, 0, 0, 0.3)",
+  "back_color": "#000000",
   "back_color_opacity": 30,
   "back_circle_stroke_width": 8,
   "resize": 1,
