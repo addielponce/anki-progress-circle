@@ -139,8 +139,8 @@ class SettingsDialog(QDialog):
             self.config = defaults
             self.main_color_picker.set_color(defaults["main_color"])
             self.main_color_picker.set_opacity(defaults.get("main_color_opacity", 100))
-            self.main_color_picker.set_color(defaults["back_color"])
-            self.main_color_picker.set_opacity(defaults.get("back_color_opacity", 100))
+            self.back_color_picker.set_color(defaults["back_color"])
+            self.back_color_picker.set_opacity(defaults.get("back_color_opacity", 100))
 
 
 def open_settings():
