@@ -77,7 +77,6 @@ class SettingsDialog(QDialog):
         super().__init__()
         self.setWindowTitle("Circle settings")
         self.config = mw.addonManager.getConfig(PACKAGE_NAME)
-        self._color = QColor(self.config["main_color"])
         self._build_ui()
 
     def _build_ui(self):
@@ -86,38 +85,22 @@ class SettingsDialog(QDialog):
         # ================================================
         #                     Widgets
         # ================================================
-
-        # Create widgets ==>
-
-        first_row_layout = QHBoxLayout()
-
-        # Label
-        color_label = QLabel("Pick main color:")
-        self.main_color_button = QPushButton()
-        self.main_color_button.setFixedHeight(
-            self.main_color_button.sizeHint().height() - 6  # make it small
+        self.main_color_picker = ColorPickerRow(
+            "Pick main color:",
+            self.config["main_color"],
+            self.config.get("main_color_opacity", 100),
         )
-        self.main_color_button.clicked.connect(self._pick_color)
-
-        alpha_label = QLabel("Opacity:")
-        self.opacity_spin = QSpinBox()
-        self.opacity_spin.setRange(0, 100)
-        self.opacity_spin.setSingleStep(5)
-        self.opacity_spin.setSuffix("%")
-        self.opacity_spin.setValue(self.config.get("main_color_opacity", 100))
-        self.opacity_spin.valueChanged.connect(self._refresh_button)
-
-        first_row_layout.addWidget(color_label)
-        first_row_layout.addWidget(self.main_color_button)
-        first_row_layout.addWidget(alpha_label)
-        first_row_layout.addWidget(self.opacity_spin)
-        main_layout.addLayout(first_row_layout)
+        self.back_color_picker = ColorPickerRow(
+            "Pick back color:",
+            self.config["back_color"],
+            self.config.get("back_color_opacity", 100),
+        )
+        main_layout.addWidget(self.main_color_picker)
+        main_layout.addWidget(self.back_color_picker)
 
         # =============================================
         #                   Buttons
         # =============================================
-        self._refresh_button()
-
         buttons = QHBoxLayout()
         save = QPushButton("Save")
         cancel = QPushButton("Cancel")
@@ -138,19 +121,6 @@ class SettingsDialog(QDialog):
         main_layout.addStretch()
 
         self.setLayout(main_layout)
-
-    def _refresh_button(self):
-        opacity = self.opacity_spin.value() / 100
-        r, g, b = self._color.red(), self._color.green(), self._color.blue()
-        self.main_color_button.setStyleSheet(
-            f"background-color: rgba({r}, {g}, {b}, {opacity});"
-        )
-
-    def _pick_color(self):
-        color = QColorDialog.getColor(self._color, self, "Main circle color")
-        if color.isValid():
-            self._color = color
-            self._refresh_button()
 
     def _save(self):
         self.config["main_color"] = self.main_color_picker.color
