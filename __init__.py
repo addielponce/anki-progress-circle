@@ -71,16 +71,14 @@ class ProgressWindow(QDialog):
         """Update the progress circle using SVG"""
 
         # Completed cards
-        dash_offset = circumference * (1 - percent / 100)
+        dash_length = circumference * (percent / 100)
 
         # Replace fields in "html_circle.html"
-
-        # Should I use get_config()["color"] instead?
 
         html_content = HTML.format(
             radius=radius,
             circumference=circumference,
-            dash_offset=dash_offset,
+            dash_length=dash_length,
             main_color=get_config()["main_color"],
             back_color=get_config()["back_color"],
             main_color_opacity=get_config()["main_color_opacity"] / 100,
