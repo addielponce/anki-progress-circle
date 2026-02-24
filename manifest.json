@@ -1,7 +1,7 @@
 {
   "package": "anki-progress-circle",
   "name": "⭕ Anki Progress Circle (progress bar)",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "author": "Addiel Ponce",
   "description": "A simple Anki add-on that displays a circular progress overlay",
   "homepage": "https://github.com/addielponce/anki-progress-circle",
