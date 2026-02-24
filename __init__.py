@@ -75,17 +75,16 @@ class ProgressWindow(QDialog):
 
         # Replace fields in "html_circle.html"
 
+        config = get_config()
+
         html_content = HTML.format(
             radius=radius,
             circumference=circumference,
             dash_length=dash_length,
-            main_color=get_config()["main_color"],
-            back_color=get_config()["back_color"],
-            main_color_opacity=get_config()["main_color_opacity"] / 100,
-            back_color_opacity=get_config()["back_color_opacity"] / 100,
-            # done=done,
-            # total=total,
-            # percent=percent,
+            main_color=config["main_color"],
+            back_color=config["back_color"],
+            main_color_opacity=config["main_color_opacity"] / 100,
+            back_color_opacity=config["back_color_opacity"] / 100,
         )
 
         self.web.setHtml(html_content)
