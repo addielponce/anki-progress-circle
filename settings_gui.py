@@ -162,7 +162,7 @@ class SettingsDialog(QDialog):
             self.back_color_picker.set_opacity(defaults.get("back_color_opacity", 100))
             self.mask_checkbox.setCheckState(
                 Qt.CheckState.Checked
-                if defaults["mask_circles"] is True
+                if defaults["mask_circles"]
                 else Qt.CheckState.Unchecked
             )
             linecap = defaults.get("stroke_linecap")
