@@ -74,12 +74,10 @@ class ProgressWindow(QDialog):
         # Completed cards
         dash_length = circumference * (percent / 100)
 
-        if percent == 0 and config["hide_main_circle_at_zero"]:
-            main_color_opacity = 0
-        else:
-            main_color_opacity = config["main_color_opacity"] / 100
-
-        mask = "url(#mask)" if config["mask_circles"] else ""
+        # Hide progress at 0 (opacity and mask)
+        hide: bool = percent == 0 and config["hide_main_circle_at_zero"]
+        main_color_opacity = 0 if hide else (config["main_color_opacity"] / 100)
+        mask = "url(#mask)" if (config["mask_circles"] and not hide) else ""
 
         self.web.setHtml(
             HTML.format(
