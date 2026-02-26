@@ -1,5 +1,6 @@
 from aqt import mw
 from aqt.qt import (
+    QCheckBox,
     QColor,
     QColorDialog,
     QDialog,
@@ -12,6 +13,7 @@ from aqt.qt import (
     QVBoxLayout,
     QWidget,
 )
+from aqt.qt.qt6 import Qt
 
 PACKAGE_NAME = "anki-progress-circle"
 
@@ -98,6 +100,13 @@ class SettingsDialog(QDialog):
         main_layout.addWidget(self.main_color_picker)
         main_layout.addWidget(self.back_color_picker)
 
+        self.mask_checkbox = QCheckBox("Prevent circles from blending together")
+
+        if self.config["mask_circles"] == "true":
+            self.mask_checkbox.setCheckState(Qt.CheckState.Checked)
+
+        main_layout.addWidget(self.mask_checkbox)
+
         # =============================================
         #                   Buttons
         # =============================================
@@ -127,6 +136,10 @@ class SettingsDialog(QDialog):
         self.config["main_color_opacity"] = self.main_color_picker.opacity
         self.config["back_color"] = self.back_color_picker.color
         self.config["back_color_opacity"] = self.back_color_picker.opacity
+        self.config["mask_circles"] = (
+            "true" if self.mask_checkbox.isChecked() else "false"
+        )
+
         mw.addonManager.writeConfig(PACKAGE_NAME, self.config)
         self.accept()
         from . import update_progress

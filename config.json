@@ -5,6 +5,7 @@
   "back_color": "#000000",
   "back_color_opacity": 30,
   "back_circle_stroke_width": 8,
+  "mask_circles": true,
   "resize": 1,
   "stroke-linecap": "butt"
 }
