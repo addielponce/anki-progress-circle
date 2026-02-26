@@ -103,7 +103,7 @@ class SettingsDialog(QDialog):
 
         self.mask_checkbox = QCheckBox("Prevent circles from blending together")
         self.stroke_linecap = QComboBox()
-        self.stroke_linecap_values = ["butt", "round", "square"]
+        self.stroke_linecap_values = ["butt", "round"]
         self.stroke_linecap.addItems(self.stroke_linecap_values)
         self.stroke_linecap.setCurrentIndex(
             self.stroke_linecap_values.index(self.config["stroke_linecap"])
