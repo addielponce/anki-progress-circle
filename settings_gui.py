@@ -109,7 +109,7 @@ class SettingsDialog(QDialog):
             self.stroke_linecap_values.index(self.config["stroke_linecap"])
         )
 
-        if self.config["mask_circles"] is True:
+        if self.config["mask_circles"]:
             self.mask_checkbox.setCheckState(Qt.CheckState.Checked)
 
         main_layout.addWidget(self.mask_checkbox)
@@ -143,9 +143,7 @@ class SettingsDialog(QDialog):
         self.config["main_color_opacity"] = self.main_color_picker.opacity
         self.config["back_color"] = self.back_color_picker.color
         self.config["back_color_opacity"] = self.back_color_picker.opacity
-        self.config["mask_circles"] = (
-            "true" if self.mask_checkbox.isChecked() else "false"
-        )
+        self.config["mask_circles"] = self.mask_checkbox.isChecked()
         self.config["stroke_linecap"] = self.stroke_linecap.currentText()
 
         mw.addonManager.writeConfig(PACKAGE_NAME, self.config)

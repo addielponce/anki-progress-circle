@@ -77,7 +77,7 @@ class ProgressWindow(QDialog):
 
         config = get_config()
 
-        mask = "url(#mask)" if config["mask_circles"] == "true" else ""
+        mask = "url(#mask)" if config["mask_circles"] else ""
 
         html_content = HTML.format(
             radius=radius,
