@@ -77,8 +77,9 @@ class ProgressWindow(QDialog):
         # Hide progress at 0 (opacity and mask)
         hide: bool = percent == 0 and config["hide_main_circle_at_zero"]
         main_color_opacity = 0 if hide else (config["main_color_opacity"] / 100)
-        mask = "url(#mask)" if (config["mask_circles"] and not hide) else ""
-
+        mask = (
+            "url(#mask)" if (config["mask_circles"] and main_color_opacity != 0) else ""
+        )
         self.web.setHtml(
             HTML.format(
                 radius=radius,
