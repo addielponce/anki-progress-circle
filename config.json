@@ -6,6 +6,7 @@
   "back_color_opacity": 30,
   "back_circle_stroke_width": 8,
   "mask_circles": true,
+  "hide_main_circle_at_zero": true,
   "resize": 1,
   "stroke_linecap": "butt"
 }

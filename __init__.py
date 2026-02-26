@@ -69,29 +69,31 @@ class ProgressWindow(QDialog):
 
     def update_progress(self, done, total, percent):
         """Update the progress circle using SVG"""
+        config = get_config()
 
         # Completed cards
         dash_length = circumference * (percent / 100)
 
-        # Replace fields in "html_circle.html"
-
-        config = get_config()
+        if percent == 0 and config["hide_main_circle_at_zero"]:
+            main_color_opacity = 0
+        else:
+            main_color_opacity = config["main_color_opacity"] / 100
 
         mask = "url(#mask)" if config["mask_circles"] else ""
 
-        html_content = HTML.format(
-            radius=radius,
-            circumference=circumference,
-            dash_length=dash_length,
-            main_color=config["main_color"],
-            back_color=config["back_color"],
-            main_color_opacity=config["main_color_opacity"] / 100,
-            back_color_opacity=config["back_color_opacity"] / 100,
-            stroke_linecap=config["stroke_linecap"],
-            mask=mask,
+        self.web.setHtml(
+            HTML.format(
+                radius=radius,
+                circumference=circumference,
+                dash_length=dash_length,
+                main_color=config["main_color"],
+                back_color=config["back_color"],
+                main_color_opacity=main_color_opacity,
+                back_color_opacity=config["back_color_opacity"] / 100,
+                stroke_linecap=config["stroke_linecap"],
+                mask=mask,
+            )
         )
-
-        self.web.setHtml(html_content)
 
 
 # Main window

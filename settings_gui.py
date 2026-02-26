@@ -102,6 +102,8 @@ class SettingsDialog(QDialog):
         main_layout.addWidget(self.back_color_picker)
 
         self.mask_checkbox = QCheckBox("Prevent circles from blending together")
+        self.hide_main_circle = QCheckBox("Hide round stroke linecap if progress is 0")
+
         self.stroke_linecap = QComboBox()
         self.stroke_linecap_values = ["butt", "round"]
         self.stroke_linecap.addItems(self.stroke_linecap_values)
@@ -112,7 +114,11 @@ class SettingsDialog(QDialog):
         if self.config["mask_circles"]:
             self.mask_checkbox.setCheckState(Qt.CheckState.Checked)
 
+        if self.config["hide_main_circle_at_zero"]:
+            self.hide_main_circle.setCheckState(Qt.CheckState.Checked)
+
         main_layout.addWidget(self.mask_checkbox)
+        main_layout.addWidget(self.hide_main_circle)
         main_layout.addWidget(self.stroke_linecap)
         # =============================================
         #                   Buttons
@@ -145,6 +151,7 @@ class SettingsDialog(QDialog):
         self.config["back_color_opacity"] = self.back_color_picker.opacity
         self.config["mask_circles"] = self.mask_checkbox.isChecked()
         self.config["stroke_linecap"] = self.stroke_linecap.currentText()
+        self.config["hide_main_circle_at_zero"] = self.hide_main_circle.isChecked()
 
         mw.addonManager.writeConfig(PACKAGE_NAME, self.config)
         self.accept()
@@ -163,6 +170,11 @@ class SettingsDialog(QDialog):
             self.mask_checkbox.setCheckState(
                 Qt.CheckState.Checked
                 if defaults["mask_circles"]
+                else Qt.CheckState.Unchecked
+            )
+            self.hide_main_circle.setCheckState(
+                Qt.CheckState.Checked
+                if defaults["hide_main_circle_at_zero"]
                 else Qt.CheckState.Unchecked
             )
             linecap = defaults.get("stroke_linecap")
