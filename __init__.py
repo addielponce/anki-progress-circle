@@ -155,6 +155,8 @@ def update_progress():
         done, total, percent = get_current_progress()
         progress_window.update_progress(done, total, percent)
 
+        # TODO: Update every X number of cards.
+
 
 # Hook functions
 def on_state_change(state, oldState):
