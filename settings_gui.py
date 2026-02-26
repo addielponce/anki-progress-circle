@@ -109,7 +109,7 @@ class SettingsDialog(QDialog):
             self.stroke_linecap_values.index(self.config["stroke_linecap"])
         )
 
-        if self.config["mask_circles"] == "true":
+        if self.config["mask_circles"] is True:
             self.mask_checkbox.setCheckState(Qt.CheckState.Checked)
 
         main_layout.addWidget(self.mask_checkbox)
