@@ -7,5 +7,5 @@
   "back_circle_stroke_width": 8,
   "mask_circles": true,
   "resize": 1,
-  "stroke-linecap": "butt"
+  "stroke_linecap": "butt"
 }

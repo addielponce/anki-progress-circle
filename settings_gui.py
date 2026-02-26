@@ -3,6 +3,7 @@ from aqt.qt import (
     QCheckBox,
     QColor,
     QColorDialog,
+    QComboBox,
     QDialog,
     QFormLayout,
     QHBoxLayout,
@@ -101,12 +102,18 @@ class SettingsDialog(QDialog):
         main_layout.addWidget(self.back_color_picker)
 
         self.mask_checkbox = QCheckBox("Prevent circles from blending together")
+        self.stroke_linecap = QComboBox()
+        self.stroke_linecap_values = ["butt", "round", "square"]
+        self.stroke_linecap.addItems(self.stroke_linecap_values)
+        self.stroke_linecap.setCurrentIndex(
+            self.stroke_linecap_values.index(self.config["stroke_linecap"])
+        )
 
         if self.config["mask_circles"] == "true":
             self.mask_checkbox.setCheckState(Qt.CheckState.Checked)
 
         main_layout.addWidget(self.mask_checkbox)
-
+        main_layout.addWidget(self.stroke_linecap)
         # =============================================
         #                   Buttons
         # =============================================
@@ -139,6 +146,7 @@ class SettingsDialog(QDialog):
         self.config["mask_circles"] = (
             "true" if self.mask_checkbox.isChecked() else "false"
         )
+        self.config["stroke_linecap"] = self.stroke_linecap.currentText()
 
         mw.addonManager.writeConfig(PACKAGE_NAME, self.config)
         self.accept()

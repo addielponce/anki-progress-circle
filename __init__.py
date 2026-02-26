@@ -87,6 +87,7 @@ class ProgressWindow(QDialog):
             back_color=config["back_color"],
             main_color_opacity=config["main_color_opacity"] / 100,
             back_color_opacity=config["back_color_opacity"] / 100,
+            stroke_linecap=config["stroke_linecap"],
             mask=mask,
         )
 
