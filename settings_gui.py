@@ -14,10 +14,10 @@ from aqt.qt import (
     QPushButton,
     QRadioButton,
     QSpinBox,
+    Qt,
     QVBoxLayout,
     QWidget,
 )
-from aqt.qt.qt6 import Qt
 
 
 class ColorPickerRow(QWidget):
@@ -361,6 +361,7 @@ class SettingsDialog(QDialog):
             config.update(
                 {
                     "update_every_mode": "percent",
+                    "update_every_n_reviews": self.update_every_n_reviews_spin.value(),
                     "update_every_percent_total": self.update_every_percent_spin.value(),
                 }
             )
@@ -369,6 +370,7 @@ class SettingsDialog(QDialog):
                 {
                     "update_every_mode": "cards",
                     "update_every_n_reviews": self.update_every_n_reviews_spin.value(),
+                    "update_every_percent_total": self.update_every_percent_spin.value(),
                 }
             )
 
