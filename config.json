@@ -9,7 +9,9 @@
   "hide_main_circle_at_zero": true,
   "open_on_startup": false,
   "force_update_on_decrease": true,
+  "update_every_mode": "cards",
   "update_every_n_reviews": 1,
+  "update_every_percent_total": 1,
   "resize": 1,
   "stroke_linecap": "butt"
 }
