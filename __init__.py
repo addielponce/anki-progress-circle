@@ -18,6 +18,7 @@
 
 
 import math
+from dataclasses import dataclass, field
 from pathlib import Path
 
 from aqt import gui_hooks, mw
@@ -98,15 +99,20 @@ class ProgressWindow(QDialog):
         )
 
 
-progress_window = None
+@dataclass
+class ProgressState:
+    progress_window = None
 
-# Tracks the starting card count and completed count per deck for the current session.
-deck_goal: dict = {}
-deck_done: dict = {}
+    # Tracks the starting card count and completed count per deck for the current session.
+    deck_goal: dict = field(default_factory=dict)
+    deck_done: dict = field(default_factory=dict)
 
-_reviews_since_update = 0
-_last_render_done = None
-_last_render_total = None
+    reviews_since_update: int = 0
+    last_render_done = None
+    last_render_total = None
+
+
+_state = ProgressState()
 
 
 def get_current_progress():
@@ -118,51 +124,48 @@ def get_current_progress():
     queued = mw.col.sched.get_queued_cards(fetch_limit=1)
     remaining = queued.new_count + queued.learning_count + queued.review_count
 
-    if deck_id not in deck_goal:
-        deck_goal[deck_id] = remaining
-        deck_done[deck_id] = 0
+    if deck_id not in _state.deck_goal:
+        _state.deck_goal[deck_id] = remaining
+        _state.deck_done[deck_id] = 0
     else:
-        deck_done[deck_id] = deck_goal[deck_id] - remaining
+        _state.deck_done[deck_id] = _state.deck_goal[deck_id] - remaining
 
         # If remaining exceeds the recorded goal, new cards were added mid-session.
-        if remaining > deck_goal[deck_id]:
-            deck_goal[deck_id] = remaining
-            deck_done[deck_id] = 0
+        if remaining > _state.deck_goal[deck_id]:
+            _state.deck_goal[deck_id] = remaining
+            _state.deck_done[deck_id] = 0
 
-    total = deck_goal[deck_id]
-    done = deck_done[deck_id]
+    total = _state.deck_goal[deck_id]
+    done = _state.deck_done[deck_id]
     percent = (done / total * 100) if total > 0 else 0.0
 
     return done, total, percent
 
 
 def toggle_progress_window():
-    global progress_window
-
-    if progress_window is None:
-        progress_window = ProgressWindow(None)
+    if _state.progress_window is None:
+        _state.progress_window = ProgressWindow(None)
 
     done, total, percent = get_current_progress()
-    progress_window.update_progress(done, total, percent)
+    _state.progress_window.update_progress(done, total, percent)
     _mark_rendered_progress(done, total)
 
-    if not progress_window.isVisible():
-        progress_window.showMaximized()
+    if not _state.progress_window.isVisible():
+        _state.progress_window.showMaximized()
     else:
-        progress_window.close()
+        _state.progress_window.close()
 
 
 def _mark_rendered_progress(done, total):
-    global _reviews_since_update, _last_render_done, _last_render_total
-    _reviews_since_update = 0
-    _last_render_done = done
-    _last_render_total = total
+    _state.reviews_since_update = 0
+    _state.last_render_done = done
+    _state.last_render_total = total
 
 
 def refresh_overlay():
-    if progress_window is not None and progress_window.isVisible():
+    if _state.progress_window is not None and _state.progress_window.isVisible():
         done, total, percent = get_current_progress()
-        progress_window.update_progress(done, total, percent)
+        _state.progress_window.update_progress(done, total, percent)
         _mark_rendered_progress(done, total)
 
 
@@ -172,9 +175,7 @@ def on_state_change(state, old_state):
 
 
 def on_review_question_shown(card):
-    global _reviews_since_update
-
-    if progress_window is None or not progress_window.isVisible():
+    if _state.progress_window is None or not _state.progress_window.isVisible():
         return
 
     done, total, percent = get_current_progress()
@@ -195,19 +196,21 @@ def on_review_question_shown(card):
     # Force an immediate update only if the last-rendered percent would otherwise
     # be higher than the true percent (avoids misleading UI when progress drops).
     force = False
-    if _last_render_done is None or _last_render_total is None:
+    if _state.last_render_done is None or _state.last_render_total is None:
         force = True
     else:
         force_enabled = bool(config.get("force_update_on_decrease", True))
         if force_enabled:
-            if _last_render_total > 0 and total > 0:
-                force = (_last_render_done * total) > (done * _last_render_total)
-            elif _last_render_total > 0 and total == 0:
-                force = _last_render_done != 0
+            if _state.last_render_total > 0 and total > 0:
+                force = (_state.last_render_done * total) > (
+                    done * _state.last_render_total
+                )
+            elif _state.last_render_total > 0 and total == 0:
+                force = _state.last_render_done != 0
 
-    _reviews_since_update += 1
-    if force or _reviews_since_update >= update_every:
-        progress_window.update_progress(done, total, percent)
+    _state.reviews_since_update += 1
+    if force or _state.reviews_since_update >= update_every:
+        _state.progress_window.update_progress(done, total, percent)
         _mark_rendered_progress(done, total)
 
 
