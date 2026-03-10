@@ -176,9 +176,17 @@ def on_review_question_shown(card):
     done, total, percent = get_current_progress()
 
     config = get_config()
-    update_every = int(config.get("update_every_n_reviews", 1) or 1)
-    if update_every < 1:
-        update_every = 1
+    update_mode = (config.get("update_every_mode", "cards") or "cards").strip().lower()
+    if update_mode == "percent":
+        percent_of_total = int(config.get("update_every_percent_total", 1) or 1)
+        percent_of_total = max(1, min(100, percent_of_total))
+        update_every = (
+            max(1, int(round(total * (percent_of_total / 100.0)))) if total > 0 else 1
+        )
+    else:
+        update_every = int(config.get("update_every_n_reviews", 1) or 1)
+        if update_every < 1:
+            update_every = 1
 
     # Force an immediate update only if the last-rendered percent would otherwise
     # be higher than the true percent (avoids misleading UI when progress drops).
