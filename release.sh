@@ -17,6 +17,6 @@ output_addon="v$version-$package_name.ankiaddon"
 }
 
 rm -f "$output_addon"
-git ls-files | zip "$output_addon" -@ -x README.md -x release.sh -x .gitignore
+git ls-files | zip "$output_addon" -@ -x README.md -x release.sh -x .gitignore -x .github
 
 printf 'Created %s\n' "$output_addon"
