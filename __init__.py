@@ -17,6 +17,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
+import math
 from pathlib import Path
 
 from aqt import gui_hooks, mw
@@ -33,12 +34,12 @@ def get_config():
 
 HTML = (Path(__file__).parent / "html_circle.html").read_text()
 
-VIEWBOX_SIZE = 100
-VIEWBOX_CENTER = VIEWBOX_SIZE / 2
-RADIUS_PADDING = 1
-
 
 class ProgressWindow(QDialog):
+    VIEWBOX_SIZE = 100
+    VIEWBOX_CENTER = VIEWBOX_SIZE / 2
+    RADIUS_PADDING = 1
+
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Progress circle")
@@ -64,8 +65,11 @@ class ProgressWindow(QDialog):
         main_stroke_width = config.get("main_circle_stroke_width", 8)
         back_stroke_width = config.get("back_circle_stroke_width", 8)
         max_stroke_width = max(main_stroke_width, back_stroke_width)
-        radius = max(1, VIEWBOX_CENTER - (max_stroke_width / 2) - RADIUS_PADDING)
-        circumference = 2 * 3.1416 * radius
+        radius = max(
+            1,
+            self.VIEWBOX_CENTER - (max_stroke_width / 2) - self.RADIUS_PADDING,
+        )
+        circumference = 2 * math.pi * radius
         dash_length = circumference * (percent / 100)
 
         is_empty = percent == 0 and config["hide_main_circle_at_zero"]
@@ -155,7 +159,7 @@ def _mark_rendered_progress(done, total):
     _last_render_total = total
 
 
-def update_progress():
+def refresh_overlay():
     if progress_window is not None and progress_window.isVisible():
         done, total, percent = get_current_progress()
         progress_window.update_progress(done, total, percent)
@@ -164,7 +168,7 @@ def update_progress():
 
 def on_state_change(state, old_state):
     if state in ("deckBrowser", "overview", "review"):
-        update_progress()
+        refresh_overlay()
 
 
 def on_review_question_shown(card):

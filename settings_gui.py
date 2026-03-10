@@ -376,9 +376,9 @@ class SettingsDialog(QDialog):
 
         mw.addonManager.writeConfig(self.package_name, self.config)
         self.accept()
-        from . import update_progress
+        from . import refresh_overlay
 
-        update_progress()
+        refresh_overlay()
 
     def _restore_defaults(self):
         defaults = mw.addonManager.addonConfigDefaults(self.package_name)
