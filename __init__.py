@@ -33,8 +33,9 @@ def get_config():
 
 HTML = (Path(__file__).parent / "html_circle.html").read_text()
 
-RADIUS = 45
-CIRCUMFERENCE = 2 * 3.1416 * RADIUS
+VIEWBOX_SIZE = 100
+VIEWBOX_CENTER = VIEWBOX_SIZE / 2
+RADIUS_PADDING = 1
 
 
 class ProgressWindow(QDialog):
@@ -60,7 +61,12 @@ class ProgressWindow(QDialog):
     def update_progress(self, done, total, percent):
         config = get_config()
 
-        dash_length = CIRCUMFERENCE * (percent / 100)
+        main_stroke_width = config.get("main_circle_stroke_width", 8)
+        back_stroke_width = config.get("back_circle_stroke_width", 8)
+        max_stroke_width = max(main_stroke_width, back_stroke_width)
+        radius = max(1, VIEWBOX_CENTER - (max_stroke_width / 2) - RADIUS_PADDING)
+        circumference = 2 * 3.1416 * radius
+        dash_length = circumference * (percent / 100)
 
         is_empty = percent == 0 and config["hide_main_circle_at_zero"]
         main_color_opacity = 0 if is_empty else (config["main_color_opacity"] / 100)
@@ -73,13 +79,15 @@ class ProgressWindow(QDialog):
 
         self.web.setHtml(
             HTML.format(
-                radius=RADIUS,
-                circumference=CIRCUMFERENCE,
+                radius=radius,
+                circumference=circumference,
                 dash_length=dash_length,
                 main_color=config["main_color"],
                 back_color=config["back_color"],
                 main_color_opacity=main_color_opacity,
                 back_color_opacity=config["back_color_opacity"] / 100,
+                main_stroke_width=main_stroke_width,
+                back_stroke_width=back_stroke_width,
                 stroke_linecap=config["stroke_linecap"],
                 mask=mask,
             )
