@@ -159,8 +159,12 @@ def on_state_change(state, old_state):
 def add_menu_entry():
     menu = QMenu("Circular progress ⭕", mw)
     mw.form.menuTools.addMenu(menu)
-    action = menu.addAction("Toggle circular progress")
-    action.triggered.connect(toggle_progress_window)
+    toggle_action = menu.addAction("Toggle circular progress")
+    toggle_action.triggered.connect(toggle_progress_window)
+
+    menu.addSeparator()
+    settings_action = menu.addAction("Circle settings...")
+    settings_action.triggered.connect(lambda: settings_gui.open_settings(__name__))
 
 
 def open_on_startup():
