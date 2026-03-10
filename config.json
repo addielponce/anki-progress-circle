@@ -8,6 +8,8 @@
   "mask_circles": true,
   "hide_main_circle_at_zero": true,
   "open_on_startup": false,
+  "force_update_on_decrease": true,
+  "update_every_n_reviews": 1,
   "resize": 1,
   "stroke_linecap": "butt"
 }

@@ -191,9 +191,37 @@ class SettingsDialog(QDialog):
             self.config.get("open_on_startup", False)
         )
 
+        self.update_every_n_reviews_spin = QSpinBox()
+        self.update_every_n_reviews_spin.setRange(1, 100)
+        self.update_every_n_reviews_spin.setValue(
+            self.config.get("update_every_n_reviews", 1)
+        )
+        self.update_every_n_reviews_spin.setSuffix(" reviews")
+
+        self.force_update_on_decrease_checkbox = QCheckBox(
+            "Refresh immediately if progress decreases"
+        )
+        self.force_update_on_decrease_checkbox.setChecked(
+            self.config.get("force_update_on_decrease", True)
+        )
+        self.force_update_on_decrease_checkbox.setToolTip(
+            "If enabled, the circle refreshes right away when the percentage drops."
+        )
+
+        update_every_row = QWidget()
+        update_every_row_layout = QHBoxLayout()
+        update_every_row_layout.setContentsMargins(0, 0, 0, 0)
+        update_every_row_layout.setSpacing(8)
+        update_every_row_layout.addWidget(QLabel("Refresh progress every"))
+        update_every_row_layout.addWidget(self.update_every_n_reviews_spin)
+        update_every_row_layout.addStretch(1)
+        update_every_row.setLayout(update_every_row_layout)
+
         behavior_layout.addWidget(self.mask_checkbox)
         behavior_layout.addWidget(self.hide_at_zero_checkbox)
         behavior_layout.addWidget(self.open_on_startup_checkbox)
+        behavior_layout.addWidget(update_every_row)
+        behavior_layout.addWidget(self.force_update_on_decrease_checkbox)
         behavior_group.setLayout(behavior_layout)
 
         button_box = QDialogButtonBox()
@@ -226,6 +254,10 @@ class SettingsDialog(QDialog):
         self.config["stroke_linecap"] = self.stroke_linecap_combo.currentData()
         self.config["hide_main_circle_at_zero"] = self.hide_at_zero_checkbox.isChecked()
         self.config["open_on_startup"] = self.open_on_startup_checkbox.isChecked()
+        self.config["force_update_on_decrease"] = (
+            self.force_update_on_decrease_checkbox.isChecked()
+        )
+        self.config["update_every_n_reviews"] = self.update_every_n_reviews_spin.value()
 
         mw.addonManager.writeConfig(self.package_name, self.config)
         self.accept()
@@ -252,6 +284,12 @@ class SettingsDialog(QDialog):
         self.mask_checkbox.setChecked(defaults["mask_circles"])
         self.hide_at_zero_checkbox.setChecked(defaults["hide_main_circle_at_zero"])
         self.open_on_startup_checkbox.setChecked(defaults.get("open_on_startup", False))
+        self.force_update_on_decrease_checkbox.setChecked(
+            defaults.get("force_update_on_decrease", True)
+        )
+        self.update_every_n_reviews_spin.setValue(
+            defaults.get("update_every_n_reviews", 1)
+        )
 
         linecap = defaults.get("stroke_linecap", "butt")
         linecap_index = self.stroke_linecap_combo.findData(linecap)

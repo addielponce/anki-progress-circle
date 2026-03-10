@@ -100,6 +100,10 @@ progress_window = None
 deck_goal: dict = {}
 deck_done: dict = {}
 
+_reviews_since_update = 0
+_last_render_done = None
+_last_render_total = None
+
 
 def get_current_progress():
     if not mw.col:
@@ -136,6 +140,7 @@ def toggle_progress_window():
 
     done, total, percent = get_current_progress()
     progress_window.update_progress(done, total, percent)
+    _mark_rendered_progress(done, total)
 
     if not progress_window.isVisible():
         progress_window.showMaximized()
@@ -143,17 +148,55 @@ def toggle_progress_window():
         progress_window.close()
 
 
+def _mark_rendered_progress(done, total):
+    global _reviews_since_update, _last_render_done, _last_render_total
+    _reviews_since_update = 0
+    _last_render_done = done
+    _last_render_total = total
+
+
 def update_progress():
     if progress_window is not None and progress_window.isVisible():
         done, total, percent = get_current_progress()
         progress_window.update_progress(done, total, percent)
-
-        # TODO: Update every X number of cards.
+        _mark_rendered_progress(done, total)
 
 
 def on_state_change(state, old_state):
     if state in ("deckBrowser", "overview", "review"):
         update_progress()
+
+
+def on_review_question_shown(card):
+    global _reviews_since_update
+
+    if progress_window is None or not progress_window.isVisible():
+        return
+
+    done, total, percent = get_current_progress()
+
+    config = get_config()
+    update_every = int(config.get("update_every_n_reviews", 1) or 1)
+    if update_every < 1:
+        update_every = 1
+
+    # Force an immediate update only if the last-rendered percent would otherwise
+    # be higher than the true percent (avoids misleading UI when progress drops).
+    force = False
+    if _last_render_done is None or _last_render_total is None:
+        force = True
+    else:
+        force_enabled = bool(config.get("force_update_on_decrease", True))
+        if force_enabled:
+            if _last_render_total > 0 and total > 0:
+                force = (_last_render_done * total) > (done * _last_render_total)
+            elif _last_render_total > 0 and total == 0:
+                force = _last_render_done != 0
+
+    _reviews_since_update += 1
+    if force or _reviews_since_update >= update_every:
+        progress_window.update_progress(done, total, percent)
+        _mark_rendered_progress(done, total)
 
 
 def add_menu_entry():
@@ -173,6 +216,6 @@ def open_on_startup():
 
 
 gui_hooks.state_did_change.append(on_state_change)
-gui_hooks.reviewer_did_show_question.append(lambda card: update_progress())
+gui_hooks.reviewer_did_show_question.append(on_review_question_shown)
 gui_hooks.main_window_did_init.append(add_menu_entry)
 gui_hooks.main_window_did_init.append(open_on_startup)
