@@ -1,3 +1,5 @@
+import logging
+
 from aqt import mw
 from aqt.qt import (
     QButtonGroup,
@@ -21,7 +23,7 @@ from aqt.qt import (
 
 
 class ColorPickerRow(QWidget):
-    def __init__(self, label_text, initial_color, initial_opacity, parent=None):
+    def __init__(self, initial_color, initial_opacity, parent=None):
         super().__init__(parent)
         self._color = QColor(initial_color)
 
@@ -112,6 +114,7 @@ class SettingsDialog(QDialog):
             queued = mw.col.sched.get_queued_cards(fetch_limit=1)
             return int(queued.new_count + queued.learning_count + queued.review_count)
         except Exception:
+            logging.exception("Failed to get queue total")
             return None
 
     def _sync_refresh_mode_ui(self):
@@ -141,13 +144,7 @@ class SettingsDialog(QDialog):
             n_cards = max(1, int(round(total * (percent_of_total / 100.0))))
             self.update_every_percent_preview.setText(f"≈ {n_cards} cards")
 
-    def _build_ui(self):
-        self.setMinimumWidth(520)
-
-        main_layout = QVBoxLayout()
-        main_layout.setContentsMargins(16, 16, 16, 16)
-        main_layout.setSpacing(12)
-
+    def _build_appearance_group(self):
         appearance_group = QGroupBox("Appearance")
         appearance_layout = QFormLayout()
         appearance_layout.setLabelAlignment(
@@ -160,12 +157,10 @@ class SettingsDialog(QDialog):
         appearance_layout.setSpacing(10)
 
         self.main_color_picker = ColorPickerRow(
-            "Progress circle",
             self.config["main_color"],
             self.config.get("main_color_opacity", 100),
         )
         self.back_color_picker = ColorPickerRow(
-            "Back circle",
             self.config["back_color"],
             self.config.get("back_color_opacity", 100),
         )
@@ -173,7 +168,9 @@ class SettingsDialog(QDialog):
         appearance_layout.addRow("Progress circle", self.main_color_picker)
         appearance_layout.addRow("Background circle", self.back_color_picker)
         appearance_group.setLayout(appearance_layout)
+        return appearance_group
 
+    def _build_stroke_group(self):
         stroke_group = QGroupBox("Stroke")
         stroke_layout = QFormLayout()
         stroke_layout.setLabelAlignment(
@@ -212,7 +209,9 @@ class SettingsDialog(QDialog):
         stroke_layout.addRow("Background width", self.back_stroke_width_spin)
         stroke_layout.addRow("Stroke end style", self.stroke_linecap_combo)
         stroke_group.setLayout(stroke_layout)
+        return stroke_group
 
+    def _build_behavior_group(self):
         behavior_group = QGroupBox("Behavior")
         behavior_layout = QVBoxLayout()
         behavior_layout.setSpacing(8)
@@ -317,8 +316,18 @@ class SettingsDialog(QDialog):
         behavior_layout.addWidget(update_every_row)
         behavior_layout.addWidget(self.force_update_on_decrease_checkbox)
         behavior_group.setLayout(behavior_layout)
+        return behavior_group
 
-        self._sync_refresh_mode_ui()
+    def _build_ui(self):
+        self.setMinimumWidth(520)
+
+        main_layout = QVBoxLayout()
+        main_layout.setContentsMargins(16, 16, 16, 16)
+        main_layout.setSpacing(12)
+
+        appearance_group = self._build_appearance_group()
+        stroke_group = self._build_stroke_group()
+        behavior_group = self._build_behavior_group()
 
         button_box = QDialogButtonBox()
         self.restore_defaults_button = button_box.addButton(
@@ -339,6 +348,8 @@ class SettingsDialog(QDialog):
         main_layout.addWidget(button_box)
         self.setLayout(main_layout)
 
+        self._sync_refresh_mode_ui()
+
     def _save(self):
         config = self.config
         config.update(
@@ -357,25 +368,18 @@ class SettingsDialog(QDialog):
             }
         )
 
-        if self.refresh_percent_radio.isChecked():
-            config.update(
-                {
-                    "update_every_mode": "percent",
-                    "update_every_n_reviews": self.update_every_n_reviews_spin.value(),
-                    "update_every_percent_total": self.update_every_percent_spin.value(),
-                }
-            )
-        else:
-            config.update(
-                {
-                    "update_every_mode": "cards",
-                    "update_every_n_reviews": self.update_every_n_reviews_spin.value(),
-                    "update_every_percent_total": self.update_every_percent_spin.value(),
-                }
-            )
+        mode = "percent" if self.refresh_percent_radio.isChecked() else "cards"
+        config.update(
+            {
+                "update_every_n_reviews": self.update_every_n_reviews_spin.value(),
+                "update_every_percent_total": self.update_every_percent_spin.value(),
+                "update_every_mode": mode,
+            }
+        )
 
         mw.addonManager.writeConfig(self.package_name, self.config)
         self.accept()
+        # Deferred to avoid a circular import at module load time.
         from . import refresh_overlay
 
         refresh_overlay()
