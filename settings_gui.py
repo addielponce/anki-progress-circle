@@ -186,8 +186,14 @@ class SettingsDialog(QDialog):
         )
         self.hide_at_zero_checkbox.setChecked(self.config["hide_main_circle_at_zero"])
 
+        self.open_on_startup_checkbox = QCheckBox("Open the progress circle on startup")
+        self.open_on_startup_checkbox.setChecked(
+            self.config.get("open_on_startup", False)
+        )
+
         behavior_layout.addWidget(self.mask_checkbox)
         behavior_layout.addWidget(self.hide_at_zero_checkbox)
+        behavior_layout.addWidget(self.open_on_startup_checkbox)
         behavior_group.setLayout(behavior_layout)
 
         button_box = QDialogButtonBox()
@@ -219,6 +225,7 @@ class SettingsDialog(QDialog):
         self.config["mask_circles"] = self.mask_checkbox.isChecked()
         self.config["stroke_linecap"] = self.stroke_linecap_combo.currentData()
         self.config["hide_main_circle_at_zero"] = self.hide_at_zero_checkbox.isChecked()
+        self.config["open_on_startup"] = self.open_on_startup_checkbox.isChecked()
 
         mw.addonManager.writeConfig(self.package_name, self.config)
         self.accept()
@@ -244,6 +251,7 @@ class SettingsDialog(QDialog):
         )
         self.mask_checkbox.setChecked(defaults["mask_circles"])
         self.hide_at_zero_checkbox.setChecked(defaults["hide_main_circle_at_zero"])
+        self.open_on_startup_checkbox.setChecked(defaults.get("open_on_startup", False))
 
         linecap = defaults.get("stroke_linecap", "butt")
         linecap_index = self.stroke_linecap_combo.findData(linecap)

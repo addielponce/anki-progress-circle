@@ -163,6 +163,12 @@ def add_menu_entry():
     action.triggered.connect(toggle_progress_window)
 
 
+def open_on_startup():
+    if get_config().get("open_on_startup", False):
+        toggle_progress_window()
+
+
 gui_hooks.state_did_change.append(on_state_change)
 gui_hooks.reviewer_did_show_question.append(lambda card: update_progress())
 gui_hooks.main_window_did_init.append(add_menu_entry)
+gui_hooks.main_window_did_init.append(open_on_startup)
