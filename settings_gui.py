@@ -1,4 +1,5 @@
 import logging
+from typing import Optional
 
 from aqt import mw
 from aqt.qt import (
@@ -23,7 +24,12 @@ from aqt.qt import (
 
 
 class ColorPickerRow(QWidget):
-    def __init__(self, initial_color, initial_opacity, parent=None):
+    def __init__(
+        self,
+        initial_color: str,
+        initial_opacity: int,
+        parent: Optional[QWidget] = None,
+    ) -> None:
         super().__init__(parent)
         self._color = QColor(initial_color)
 
@@ -57,7 +63,7 @@ class ColorPickerRow(QWidget):
 
         self._refresh_button()
 
-    def _refresh_button(self):
+    def _refresh_button(self) -> None:
         color_name = self._color.name(QColor.NameFormat.HexRgb)
         preview_color = QColor(self._color)
         preview_color.setAlpha(round(self._opacity_spin.value() * 2.55))
@@ -71,25 +77,25 @@ class ColorPickerRow(QWidget):
         )
         self._hex_label.setText(color_name)
 
-    def _pick_color(self):
+    def _pick_color(self) -> None:
         color = QColorDialog.getColor(self._color, self, "Pick color")
         if color.isValid():
             self._color = color
             self._refresh_button()
 
     @property
-    def color(self):
+    def color(self) -> str:
         return self._color.name(QColor.NameFormat.HexRgb)
 
     @property
-    def opacity(self):
+    def opacity(self) -> int:
         return self._opacity_spin.value()
 
-    def set_color(self, color):
+    def set_color(self, color: str) -> None:
         self._color = QColor(color)
         self._refresh_button()
 
-    def set_opacity(self, opacity):
+    def set_opacity(self, opacity: int) -> None:
         self._opacity_spin.setValue(opacity)
 
 
@@ -99,14 +105,14 @@ class SettingsDialog(QDialog):
         ("Rounded ends", "round"),
     ]
 
-    def __init__(self, package_name, parent=None):
+    def __init__(self, package_name: str, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
         self.setWindowTitle("Circle settings")
         self.package_name = package_name
         self.config = mw.addonManager.getConfig(package_name)
         self._build_ui()
 
-    def _get_current_queue_total(self):
+    def _get_current_queue_total(self) -> Optional[int]:
         """Best-effort estimate for the current deck queue size, for UI preview."""
         try:
             if not mw.col:
@@ -117,13 +123,13 @@ class SettingsDialog(QDialog):
             logging.exception("Failed to get queue total")
             return None
 
-    def _sync_refresh_mode_ui(self):
+    def _sync_refresh_mode_ui(self) -> None:
         cards = self.refresh_cards_radio.isChecked()
         self.update_every_n_reviews_spin.setEnabled(cards)
         self.update_every_percent_spin.setEnabled(not cards)
         self._refresh_update_every_preview()
 
-    def _refresh_update_every_preview(self):
+    def _refresh_update_every_preview(self) -> None:
         total = self._get_current_queue_total()
         cards = self.update_every_n_reviews_spin.value()
         if total is None or total <= 0:
@@ -144,7 +150,7 @@ class SettingsDialog(QDialog):
             n_cards = max(1, int(round(total * (percent_of_total / 100.0))))
             self.update_every_percent_preview.setText(f"≈ {n_cards} cards")
 
-    def _build_appearance_group(self):
+    def _build_appearance_group(self) -> QGroupBox:
         appearance_group = QGroupBox("Appearance")
         appearance_layout = QFormLayout()
         appearance_layout.setLabelAlignment(
@@ -170,7 +176,7 @@ class SettingsDialog(QDialog):
         appearance_group.setLayout(appearance_layout)
         return appearance_group
 
-    def _build_stroke_group(self):
+    def _build_stroke_group(self) -> QGroupBox:
         stroke_group = QGroupBox("Stroke")
         stroke_layout = QFormLayout()
         stroke_layout.setLabelAlignment(
@@ -211,7 +217,7 @@ class SettingsDialog(QDialog):
         stroke_group.setLayout(stroke_layout)
         return stroke_group
 
-    def _build_behavior_group(self):
+    def _build_behavior_group(self) -> QGroupBox:
         behavior_group = QGroupBox("Behavior")
         behavior_layout = QVBoxLayout()
         behavior_layout.setSpacing(8)
@@ -318,7 +324,7 @@ class SettingsDialog(QDialog):
         behavior_group.setLayout(behavior_layout)
         return behavior_group
 
-    def _build_ui(self):
+    def _build_ui(self) -> None:
         self.setMinimumWidth(520)
 
         main_layout = QVBoxLayout()
@@ -350,7 +356,7 @@ class SettingsDialog(QDialog):
 
         self._sync_refresh_mode_ui()
 
-    def _save(self):
+    def _save(self) -> None:
         config = self.config
         config.update(
             {
@@ -384,7 +390,7 @@ class SettingsDialog(QDialog):
 
         refresh_overlay()
 
-    def _restore_defaults(self):
+    def _restore_defaults(self) -> None:
         defaults = mw.addonManager.addonConfigDefaults(self.package_name)
         if not defaults:
             return
@@ -425,6 +431,6 @@ class SettingsDialog(QDialog):
             self.stroke_linecap_combo.setCurrentIndex(linecap_index)
 
 
-def open_settings(package_name):
+def open_settings(package_name: str) -> None:
     dialog = SettingsDialog(package_name)
     dialog.exec()

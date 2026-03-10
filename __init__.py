@@ -20,6 +20,7 @@
 import math
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Any, Optional
 
 from aqt import gui_hooks, mw
 from aqt.qt import QDialog, QMenu, Qt, QVBoxLayout, QWebEngineView
@@ -29,7 +30,7 @@ from . import settings_gui
 mw.addonManager.setConfigAction(__name__, lambda: settings_gui.open_settings(__name__))
 
 
-def get_config():
+def get_config() -> dict[str, Any]:
     return mw.addonManager.getConfig(__name__)
 
 
@@ -41,7 +42,7 @@ class ProgressWindow(QDialog):
     VIEWBOX_CENTER = VIEWBOX_SIZE / 2
     RADIUS_PADDING = 1
 
-    def __init__(self, parent=None):
+    def __init__(self, parent: Optional[object] = None) -> None:
         super().__init__(parent)
         self.setWindowTitle("Progress circle")
 
@@ -60,7 +61,7 @@ class ProgressWindow(QDialog):
 
         self.update_progress(0, 0, 0)
 
-    def update_progress(self, done, total, percent):
+    def update_progress(self, done: int, total: int, percent: float) -> None:
         config = get_config()
 
         main_stroke_width = config.get("main_circle_stroke_width", 8)
@@ -101,21 +102,21 @@ class ProgressWindow(QDialog):
 
 @dataclass
 class ProgressState:
-    progress_window = None
+    progress_window: Optional[ProgressWindow] = None
 
     # Tracks the starting card count and completed count per deck for the current session.
-    deck_goal: dict = field(default_factory=dict)
-    deck_done: dict = field(default_factory=dict)
+    deck_goal: dict[int, int] = field(default_factory=dict)
+    deck_done: dict[int, int] = field(default_factory=dict)
 
     reviews_since_update: int = 0
-    last_render_done = None
-    last_render_total = None
+    last_render_done: Optional[int] = None
+    last_render_total: Optional[int] = None
 
 
 _state = ProgressState()
 
 
-def get_current_progress():
+def get_current_progress() -> tuple[int, int, float]:
     if not mw.col:
         return 0, 0, 0.0
 
@@ -142,7 +143,7 @@ def get_current_progress():
     return done, total, percent
 
 
-def toggle_progress_window():
+def toggle_progress_window() -> None:
     if _state.progress_window is None:
         _state.progress_window = ProgressWindow(None)
 
@@ -156,25 +157,25 @@ def toggle_progress_window():
         _state.progress_window.close()
 
 
-def _mark_rendered_progress(done, total):
+def _mark_rendered_progress(done: int, total: int) -> None:
     _state.reviews_since_update = 0
     _state.last_render_done = done
     _state.last_render_total = total
 
 
-def refresh_overlay():
+def refresh_overlay() -> None:
     if _state.progress_window is not None and _state.progress_window.isVisible():
         done, total, percent = get_current_progress()
         _state.progress_window.update_progress(done, total, percent)
         _mark_rendered_progress(done, total)
 
 
-def on_state_change(state, old_state):
+def on_state_change(state: str, old_state: str) -> None:
     if state in ("deckBrowser", "overview", "review"):
         refresh_overlay()
 
 
-def on_review_question_shown(card):
+def on_review_question_shown(card: Any) -> None:
     if _state.progress_window is None or not _state.progress_window.isVisible():
         return
 
@@ -214,7 +215,7 @@ def on_review_question_shown(card):
         _mark_rendered_progress(done, total)
 
 
-def add_menu_entry():
+def add_menu_entry() -> None:
     menu = QMenu("Circular progress ⭕", mw)
     mw.form.menuTools.addMenu(menu)
     toggle_action = menu.addAction("Toggle circular progress")
@@ -225,7 +226,7 @@ def add_menu_entry():
     settings_action.triggered.connect(lambda: settings_gui.open_settings(__name__))
 
 
-def open_on_startup():
+def open_on_startup() -> None:
     if get_config().get("open_on_startup", False):
         toggle_progress_window()
 
