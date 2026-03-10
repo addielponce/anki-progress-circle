@@ -5,6 +5,9 @@ from aqt.qt import (
     QColorDialog,
     QComboBox,
     QDialog,
+    QDialogButtonBox,
+    QFormLayout,
+    QGroupBox,
     QHBoxLayout,
     QLabel,
     QPushButton,
@@ -22,33 +25,47 @@ class ColorPickerRow(QWidget):
 
         layout = QHBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(8)
 
-        self._button = QPushButton()
-        # Slightly shorter than the default height to align with adjacent spin boxes.
-        self._button.setFixedHeight(self._button.sizeHint().height() - 6)
+        self._button = QPushButton("Choose color")
+        self._button.setMinimumWidth(120)
         self._button.clicked.connect(self._pick_color)
 
+        self._hex_label = QLabel()
+        self._hex_label.setTextInteractionFlags(
+            Qt.TextInteractionFlag.TextSelectableByMouse
+        )
+
+        self._opacity_label = QLabel("Opacity")
         self._opacity_spin = QSpinBox()
         self._opacity_spin.setRange(0, 100)
         self._opacity_spin.setSingleStep(5)
         self._opacity_spin.setSuffix("%")
         self._opacity_spin.setValue(initial_opacity)
         self._opacity_spin.valueChanged.connect(self._refresh_button)
+        self._opacity_label.setBuddy(self._opacity_spin)
 
-        layout.addWidget(QLabel(label_text))
         layout.addWidget(self._button)
-        layout.addWidget(QLabel("Opacity:"))
+        layout.addWidget(self._hex_label, 1)
+        layout.addWidget(self._opacity_label)
         layout.addWidget(self._opacity_spin)
         self.setLayout(layout)
 
         self._refresh_button()
 
     def _refresh_button(self):
-        opacity = self._opacity_spin.value() / 100
-        red, green, blue = self._color.red(), self._color.green(), self._color.blue()
+        color_name = self._color.name(QColor.NameFormat.HexRgb)
+        preview_color = QColor(self._color)
+        preview_color.setAlpha(round(self._opacity_spin.value() * 2.55))
         self._button.setStyleSheet(
-            f"background-color: rgba({red}, {green}, {blue}, {opacity});"
+            "QPushButton {{"
+            "background-color: {color};"
+            "border: 1px solid palette(mid);"
+            "border-radius: 6px;"
+            "padding: 4px 10px;"
+            "}}".format(color=preview_color.name(QColor.NameFormat.HexArgb))
         )
+        self._hex_label.setText(color_name)
 
     def _pick_color(self):
         color = QColorDialog.getColor(self._color, self, "Pick color")
@@ -81,63 +98,84 @@ class SettingsDialog(QDialog):
         self._build_ui()
 
     def _build_ui(self):
+        self.setMinimumWidth(520)
+
         main_layout = QVBoxLayout()
+        main_layout.setContentsMargins(16, 16, 16, 16)
+        main_layout.setSpacing(12)
+
+        appearance_group = QGroupBox("Appearance")
+        appearance_layout = QFormLayout()
+        appearance_layout.setLabelAlignment(
+            Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
+        )
+        appearance_layout.setFormAlignment(Qt.AlignmentFlag.AlignTop)
+        appearance_layout.setFieldGrowthPolicy(
+            QFormLayout.FieldGrowthPolicy.ExpandingFieldsGrow
+        )
+        appearance_layout.setSpacing(10)
 
         self.main_color_picker = ColorPickerRow(
-            "Pick main color:",
+            "Progress circle",
             self.config["main_color"],
             self.config.get("main_color_opacity", 100),
         )
         self.back_color_picker = ColorPickerRow(
-            "Pick back color:",
+            "Back circle",
             self.config["back_color"],
             self.config.get("back_color_opacity", 100),
         )
 
-        self.mask_checkbox = QCheckBox("Prevent circles from blending together")
-        self.mask_checkbox.setCheckState(
-            Qt.CheckState.Checked
-            if self.config["mask_circles"]
-            else Qt.CheckState.Unchecked
-        )
+        appearance_layout.addRow("Progress circle", self.main_color_picker)
+        appearance_layout.addRow("Background circle", self.back_color_picker)
+        appearance_group.setLayout(appearance_layout)
 
-        self.hide_at_zero_checkbox = QCheckBox(
-            "Hide round stroke linecap if progress is 0"
-        )
-        self.hide_at_zero_checkbox.setCheckState(
-            Qt.CheckState.Checked
-            if self.config["hide_main_circle_at_zero"]
-            else Qt.CheckState.Unchecked
-        )
-
-        self.stroke_linecap_values = ["butt", "round"]
+        stroke_group = QGroupBox("Stroke")
+        stroke_layout = QVBoxLayout()
+        stroke_layout.setSpacing(8)
         self.stroke_linecap_combo = QComboBox()
+        self.stroke_linecap_values = ["butt", "round"]
         self.stroke_linecap_combo.addItems(self.stroke_linecap_values)
         self.stroke_linecap_combo.setCurrentIndex(
             self.stroke_linecap_values.index(self.config["stroke_linecap"])
         )
+        stroke_layout.addWidget(QLabel("Stroke line cap"))
+        stroke_layout.addWidget(self.stroke_linecap_combo)
+        stroke_group.setLayout(stroke_layout)
 
-        main_layout.addWidget(self.main_color_picker)
-        main_layout.addWidget(self.back_color_picker)
-        main_layout.addWidget(self.mask_checkbox)
-        main_layout.addWidget(self.hide_at_zero_checkbox)
-        main_layout.addWidget(self.stroke_linecap_combo)
+        behavior_group = QGroupBox("Behavior")
+        behavior_layout = QVBoxLayout()
+        behavior_layout.setSpacing(8)
 
-        save_button = QPushButton("Save")
-        cancel_button = QPushButton("Cancel")
-        defaults_button = QPushButton("Restore Defaults")
+        self.mask_checkbox = QCheckBox("Prevent circles from blending together")
+        self.mask_checkbox.setChecked(self.config["mask_circles"])
 
-        save_button.clicked.connect(self._save)
-        cancel_button.clicked.connect(self.reject)
-        defaults_button.clicked.connect(self._restore_defaults)
+        self.hide_at_zero_checkbox = QCheckBox(
+            "Hide the progress stroke when progress is 0%"
+        )
+        self.hide_at_zero_checkbox.setChecked(self.config["hide_main_circle_at_zero"])
 
-        button_row = QHBoxLayout()
-        button_row.addWidget(defaults_button)
-        button_row.addWidget(cancel_button)
-        button_row.addWidget(save_button)
+        behavior_layout.addWidget(self.mask_checkbox)
+        behavior_layout.addWidget(self.hide_at_zero_checkbox)
+        behavior_group.setLayout(behavior_layout)
 
-        main_layout.addLayout(button_row)
-        main_layout.addStretch()
+        button_box = QDialogButtonBox()
+        self.restore_defaults_button = button_box.addButton(
+            "Restore Defaults", QDialogButtonBox.ButtonRole.ResetRole
+        )
+        self.cancel_button = button_box.addButton(
+            QDialogButtonBox.StandardButton.Cancel
+        )
+        self.save_button = button_box.addButton(QDialogButtonBox.StandardButton.Save)
+
+        self.restore_defaults_button.clicked.connect(self._restore_defaults)
+        button_box.accepted.connect(self._save)
+        button_box.rejected.connect(self.reject)
+
+        main_layout.addWidget(appearance_group)
+        main_layout.addWidget(stroke_group)
+        main_layout.addWidget(behavior_group)
+        main_layout.addWidget(button_box)
         self.setLayout(main_layout)
 
     def _save(self):
@@ -165,16 +203,9 @@ class SettingsDialog(QDialog):
         self.main_color_picker.set_opacity(defaults.get("main_color_opacity", 100))
         self.back_color_picker.set_color(defaults["back_color"])
         self.back_color_picker.set_opacity(defaults.get("back_color_opacity", 100))
-        self.mask_checkbox.setCheckState(
-            Qt.CheckState.Checked
-            if defaults["mask_circles"]
-            else Qt.CheckState.Unchecked
-        )
-        self.hide_at_zero_checkbox.setCheckState(
-            Qt.CheckState.Checked
-            if defaults["hide_main_circle_at_zero"]
-            else Qt.CheckState.Unchecked
-        )
+        self.mask_checkbox.setChecked(defaults["mask_circles"])
+        self.hide_at_zero_checkbox.setChecked(defaults["hide_main_circle_at_zero"])
+
         linecap = defaults.get("stroke_linecap")
         if linecap in self.stroke_linecap_values:
             self.stroke_linecap_combo.setCurrentIndex(
