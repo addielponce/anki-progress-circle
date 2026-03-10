@@ -1,5 +1,6 @@
 from aqt import mw
 from aqt.qt import (
+    QButtonGroup,
     QCheckBox,
     QColor,
     QColorDialog,
@@ -11,6 +12,7 @@ from aqt.qt import (
     QHBoxLayout,
     QLabel,
     QPushButton,
+    QRadioButton,
     QSpinBox,
     QVBoxLayout,
     QWidget,
@@ -102,6 +104,43 @@ class SettingsDialog(QDialog):
         self.config = mw.addonManager.getConfig(package_name)
         self._build_ui()
 
+    def _get_current_queue_total(self):
+        """Best-effort estimate for the current deck queue size, for UI preview."""
+        try:
+            if not mw.col:
+                return None
+            queued = mw.col.sched.get_queued_cards(fetch_limit=1)
+            return int(queued.new_count + queued.learning_count + queued.review_count)
+        except Exception:
+            return None
+
+    def _sync_refresh_mode_ui(self):
+        cards = self.refresh_cards_radio.isChecked()
+        self.update_every_n_reviews_spin.setEnabled(cards)
+        self.update_every_percent_spin.setEnabled(not cards)
+        self._refresh_update_every_preview()
+
+    def _refresh_update_every_preview(self):
+        total = self._get_current_queue_total()
+        cards = self.update_every_n_reviews_spin.value()
+        if total is None or total <= 0:
+            self.update_every_cards_preview.setText("≈ ?% of current queue")
+        else:
+            percent_of_total_rounded = int(round((cards / float(total)) * 100))
+            if percent_of_total_rounded > 100:
+                self.update_every_cards_preview.setText("≈ >100% of current queue")
+            else:
+                self.update_every_cards_preview.setText(
+                    f"≈ {percent_of_total_rounded}% of current queue"
+                )
+
+        percent_of_total = self.update_every_percent_spin.value()
+        if total is None or total <= 0:
+            self.update_every_percent_preview.setText("≈ ? cards")
+        else:
+            n_cards = max(1, int(round(total * (percent_of_total / 100.0))))
+            self.update_every_percent_preview.setText(f"≈ {n_cards} cards")
+
     def _build_ui(self):
         self.setMinimumWidth(520)
 
@@ -191,12 +230,43 @@ class SettingsDialog(QDialog):
             self.config.get("open_on_startup", False)
         )
 
+        self.refresh_button_group = QButtonGroup(self)
+        self.refresh_cards_radio = QRadioButton("Refresh every")
+        self.refresh_percent_radio = QRadioButton("Refresh every")
+        self.refresh_button_group.addButton(self.refresh_cards_radio)
+        self.refresh_button_group.addButton(self.refresh_percent_radio)
+
+        update_mode = (self.config.get("update_every_mode", "cards") or "cards").strip()
+        if update_mode.lower() == "percent":
+            self.refresh_percent_radio.setChecked(True)
+        else:
+            self.refresh_cards_radio.setChecked(True)
+
         self.update_every_n_reviews_spin = QSpinBox()
         self.update_every_n_reviews_spin.setRange(1, 100)
         self.update_every_n_reviews_spin.setValue(
-            self.config.get("update_every_n_reviews", 1)
+            int(self.config.get("update_every_n_reviews", 1) or 1)
         )
-        self.update_every_n_reviews_spin.setSuffix(" reviews")
+        self.update_every_n_reviews_spin.setSuffix(" cards")
+        self.update_every_n_reviews_spin.valueChanged.connect(
+            self._refresh_update_every_preview
+        )
+
+        self.update_every_cards_preview = QLabel()
+        self.update_every_cards_preview.setStyleSheet("color: palette(mid);")
+
+        self.update_every_percent_spin = QSpinBox()
+        self.update_every_percent_spin.setRange(1, 100)
+        self.update_every_percent_spin.setValue(
+            int(self.config.get("update_every_percent_total", 1) or 1)
+        )
+        self.update_every_percent_spin.setSuffix("%")
+        self.update_every_percent_spin.valueChanged.connect(
+            self._refresh_update_every_preview
+        )
+
+        self.update_every_percent_preview = QLabel()
+        self.update_every_percent_preview.setStyleSheet("color: palette(mid);")
 
         self.force_update_on_decrease_checkbox = QCheckBox(
             "Refresh immediately if progress decreases"
@@ -209,13 +279,37 @@ class SettingsDialog(QDialog):
         )
 
         update_every_row = QWidget()
-        update_every_row_layout = QHBoxLayout()
+        update_every_row_layout = QVBoxLayout()
         update_every_row_layout.setContentsMargins(0, 0, 0, 0)
-        update_every_row_layout.setSpacing(8)
-        update_every_row_layout.addWidget(QLabel("Refresh progress every"))
-        update_every_row_layout.addWidget(self.update_every_n_reviews_spin)
-        update_every_row_layout.addStretch(1)
+        update_every_row_layout.setSpacing(6)
+
+        cards_row = QWidget()
+        cards_row_layout = QHBoxLayout()
+        cards_row_layout.setContentsMargins(0, 0, 0, 0)
+        cards_row_layout.setSpacing(8)
+        cards_row_layout.addWidget(self.refresh_cards_radio)
+        cards_row_layout.addWidget(self.update_every_n_reviews_spin)
+        cards_row_layout.addWidget(self.update_every_cards_preview)
+        cards_row_layout.addStretch(1)
+        cards_row.setLayout(cards_row_layout)
+
+        percent_row = QWidget()
+        percent_row_layout = QHBoxLayout()
+        percent_row_layout.setContentsMargins(0, 0, 0, 0)
+        percent_row_layout.setSpacing(8)
+        percent_row_layout.addWidget(self.refresh_percent_radio)
+        percent_row_layout.addWidget(self.update_every_percent_spin)
+        percent_row_layout.addWidget(QLabel("of total"))
+        percent_row_layout.addWidget(self.update_every_percent_preview)
+        percent_row_layout.addStretch(1)
+        percent_row.setLayout(percent_row_layout)
+
+        update_every_row_layout.addWidget(cards_row)
+        update_every_row_layout.addWidget(percent_row)
         update_every_row.setLayout(update_every_row_layout)
+
+        self.refresh_cards_radio.toggled.connect(self._sync_refresh_mode_ui)
+        self.refresh_percent_radio.toggled.connect(self._sync_refresh_mode_ui)
 
         behavior_layout.addWidget(self.mask_checkbox)
         behavior_layout.addWidget(self.hide_at_zero_checkbox)
@@ -223,6 +317,8 @@ class SettingsDialog(QDialog):
         behavior_layout.addWidget(update_every_row)
         behavior_layout.addWidget(self.force_update_on_decrease_checkbox)
         behavior_group.setLayout(behavior_layout)
+
+        self._sync_refresh_mode_ui()
 
         button_box = QDialogButtonBox()
         self.restore_defaults_button = button_box.addButton(
@@ -244,20 +340,37 @@ class SettingsDialog(QDialog):
         self.setLayout(main_layout)
 
     def _save(self):
-        self.config["main_color"] = self.main_color_picker.color
-        self.config["main_color_opacity"] = self.main_color_picker.opacity
-        self.config["main_circle_stroke_width"] = self.main_stroke_width_spin.value()
-        self.config["back_color"] = self.back_color_picker.color
-        self.config["back_color_opacity"] = self.back_color_picker.opacity
-        self.config["back_circle_stroke_width"] = self.back_stroke_width_spin.value()
-        self.config["mask_circles"] = self.mask_checkbox.isChecked()
-        self.config["stroke_linecap"] = self.stroke_linecap_combo.currentData()
-        self.config["hide_main_circle_at_zero"] = self.hide_at_zero_checkbox.isChecked()
-        self.config["open_on_startup"] = self.open_on_startup_checkbox.isChecked()
-        self.config["force_update_on_decrease"] = (
-            self.force_update_on_decrease_checkbox.isChecked()
+        config = self.config
+        config.update(
+            {
+                "main_color": self.main_color_picker.color,
+                "main_color_opacity": self.main_color_picker.opacity,
+                "main_circle_stroke_width": self.main_stroke_width_spin.value(),
+                "back_color": self.back_color_picker.color,
+                "back_color_opacity": self.back_color_picker.opacity,
+                "back_circle_stroke_width": self.back_stroke_width_spin.value(),
+                "mask_circles": self.mask_checkbox.isChecked(),
+                "stroke_linecap": self.stroke_linecap_combo.currentData(),
+                "hide_main_circle_at_zero": self.hide_at_zero_checkbox.isChecked(),
+                "open_on_startup": self.open_on_startup_checkbox.isChecked(),
+                "force_update_on_decrease": self.force_update_on_decrease_checkbox.isChecked(),
+            }
         )
-        self.config["update_every_n_reviews"] = self.update_every_n_reviews_spin.value()
+
+        if self.refresh_percent_radio.isChecked():
+            config.update(
+                {
+                    "update_every_mode": "percent",
+                    "update_every_percent_total": self.update_every_percent_spin.value(),
+                }
+            )
+        else:
+            config.update(
+                {
+                    "update_every_mode": "cards",
+                    "update_every_n_reviews": self.update_every_n_reviews_spin.value(),
+                }
+            )
 
         mw.addonManager.writeConfig(self.package_name, self.config)
         self.accept()
@@ -287,9 +400,18 @@ class SettingsDialog(QDialog):
         self.force_update_on_decrease_checkbox.setChecked(
             defaults.get("force_update_on_decrease", True)
         )
+        mode = (defaults.get("update_every_mode", "cards") or "cards").strip().lower()
+        if mode == "percent":
+            self.refresh_percent_radio.setChecked(True)
+        else:
+            self.refresh_cards_radio.setChecked(True)
         self.update_every_n_reviews_spin.setValue(
             defaults.get("update_every_n_reviews", 1)
         )
+        self.update_every_percent_spin.setValue(
+            defaults.get("update_every_percent_total", 1)
+        )
+        self._sync_refresh_mode_ui()
 
         linecap = defaults.get("stroke_linecap", "butt")
         linecap_index = self.stroke_linecap_combo.findData(linecap)
