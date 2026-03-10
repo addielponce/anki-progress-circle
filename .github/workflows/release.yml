@@ -1,0 +1,57 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      changelog:
+        description: Changelog for this release
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Read release metadata
+        id: meta
+        run: |
+          version=$(jq -r '.version' manifest.json)
+          package=$(jq -r '.package' manifest.json)
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "tag=v$version" >> "$GITHUB_OUTPUT"
+          echo "file=v$version-$package.ankiaddon" >> "$GITHUB_OUTPUT"
+
+      - name: Build addon package
+        run: |
+          chmod +x ./release.sh
+          ./release.sh
+          test -f "${{ steps.meta.outputs.file }}"
+
+      - name: Create and push tag
+        env:
+          TAG: ${{ steps.meta.outputs.tag }}
+        run: |
+          git fetch --tags --force
+          if git rev-parse -q --verify "refs/tags/$TAG" >/dev/null; then
+            echo "Error: tag '$TAG' already exists. Bump manifest.json version (or delete the tag) and re-run." >&2
+            exit 1
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "$TAG" -m "Release $TAG"
+          git push origin "$TAG"
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.meta.outputs.tag }}
+          name: ${{ steps.meta.outputs.tag }}
+          body: ${{ inputs.changelog }}
+          files: ${{ steps.meta.outputs.file }}
