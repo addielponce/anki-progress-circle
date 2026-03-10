@@ -90,6 +90,11 @@ class ColorPickerRow(QWidget):
 
 
 class SettingsDialog(QDialog):
+    STROKE_LINECAP_OPTIONS = [
+        ("Flat ends", "butt"),
+        ("Rounded ends", "round"),
+    ]
+
     def __init__(self, package_name, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Circle settings")
@@ -131,16 +136,42 @@ class SettingsDialog(QDialog):
         appearance_group.setLayout(appearance_layout)
 
         stroke_group = QGroupBox("Stroke")
-        stroke_layout = QVBoxLayout()
-        stroke_layout.setSpacing(8)
-        self.stroke_linecap_combo = QComboBox()
-        self.stroke_linecap_values = ["butt", "round"]
-        self.stroke_linecap_combo.addItems(self.stroke_linecap_values)
-        self.stroke_linecap_combo.setCurrentIndex(
-            self.stroke_linecap_values.index(self.config["stroke_linecap"])
+        stroke_layout = QFormLayout()
+        stroke_layout.setLabelAlignment(
+            Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
         )
-        stroke_layout.addWidget(QLabel("Stroke line cap"))
-        stroke_layout.addWidget(self.stroke_linecap_combo)
+        stroke_layout.setFormAlignment(Qt.AlignmentFlag.AlignTop)
+        stroke_layout.setFieldGrowthPolicy(
+            QFormLayout.FieldGrowthPolicy.ExpandingFieldsGrow
+        )
+        stroke_layout.setSpacing(10)
+
+        self.main_stroke_width_spin = QSpinBox()
+        self.main_stroke_width_spin.setRange(1, 50)
+        self.main_stroke_width_spin.setSuffix(" px")
+        self.main_stroke_width_spin.setValue(
+            self.config.get("main_circle_stroke_width", 8)
+        )
+
+        self.back_stroke_width_spin = QSpinBox()
+        self.back_stroke_width_spin.setRange(1, 50)
+        self.back_stroke_width_spin.setSuffix(" px")
+        self.back_stroke_width_spin.setValue(
+            self.config.get("back_circle_stroke_width", 8)
+        )
+
+        self.stroke_linecap_combo = QComboBox()
+        for label, value in self.STROKE_LINECAP_OPTIONS:
+            self.stroke_linecap_combo.addItem(label, value)
+
+        current_linecap = self.config.get("stroke_linecap", "butt")
+        current_linecap_index = self.stroke_linecap_combo.findData(current_linecap)
+        if current_linecap_index >= 0:
+            self.stroke_linecap_combo.setCurrentIndex(current_linecap_index)
+
+        stroke_layout.addRow("Progress width", self.main_stroke_width_spin)
+        stroke_layout.addRow("Background width", self.back_stroke_width_spin)
+        stroke_layout.addRow("Stroke end style", self.stroke_linecap_combo)
         stroke_group.setLayout(stroke_layout)
 
         behavior_group = QGroupBox("Behavior")
@@ -181,10 +212,12 @@ class SettingsDialog(QDialog):
     def _save(self):
         self.config["main_color"] = self.main_color_picker.color
         self.config["main_color_opacity"] = self.main_color_picker.opacity
+        self.config["main_circle_stroke_width"] = self.main_stroke_width_spin.value()
         self.config["back_color"] = self.back_color_picker.color
         self.config["back_color_opacity"] = self.back_color_picker.opacity
+        self.config["back_circle_stroke_width"] = self.back_stroke_width_spin.value()
         self.config["mask_circles"] = self.mask_checkbox.isChecked()
-        self.config["stroke_linecap"] = self.stroke_linecap_combo.currentText()
+        self.config["stroke_linecap"] = self.stroke_linecap_combo.currentData()
         self.config["hide_main_circle_at_zero"] = self.hide_at_zero_checkbox.isChecked()
 
         mw.addonManager.writeConfig(self.package_name, self.config)
@@ -201,16 +234,21 @@ class SettingsDialog(QDialog):
         self.config = defaults
         self.main_color_picker.set_color(defaults["main_color"])
         self.main_color_picker.set_opacity(defaults.get("main_color_opacity", 100))
+        self.main_stroke_width_spin.setValue(
+            defaults.get("main_circle_stroke_width", 8)
+        )
         self.back_color_picker.set_color(defaults["back_color"])
         self.back_color_picker.set_opacity(defaults.get("back_color_opacity", 100))
+        self.back_stroke_width_spin.setValue(
+            defaults.get("back_circle_stroke_width", 8)
+        )
         self.mask_checkbox.setChecked(defaults["mask_circles"])
         self.hide_at_zero_checkbox.setChecked(defaults["hide_main_circle_at_zero"])
 
-        linecap = defaults.get("stroke_linecap")
-        if linecap in self.stroke_linecap_values:
-            self.stroke_linecap_combo.setCurrentIndex(
-                self.stroke_linecap_values.index(linecap)
-            )
+        linecap = defaults.get("stroke_linecap", "butt")
+        linecap_index = self.stroke_linecap_combo.findData(linecap)
+        if linecap_index >= 0:
+            self.stroke_linecap_combo.setCurrentIndex(linecap_index)
 
 
 def open_settings(package_name):
