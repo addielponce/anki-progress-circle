@@ -324,6 +324,65 @@ class SettingsDialog(QDialog):
         behavior_group.setLayout(behavior_layout)
         return behavior_group
 
+    TIMER_DIRECTION_OPTIONS = [
+        ("Countdown", "countdown"),
+        ("Count up", "countup"),
+    ]
+
+    def _build_timer_group(self) -> QGroupBox:
+        timer_group = QGroupBox("Timer")
+        timer_layout = QFormLayout()
+        timer_layout.setLabelAlignment(
+            Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
+        )
+        timer_layout.setFormAlignment(Qt.AlignmentFlag.AlignTop)
+        timer_layout.setFieldGrowthPolicy(
+            QFormLayout.FieldGrowthPolicy.ExpandingFieldsGrow
+        )
+        timer_layout.setSpacing(10)
+
+        self.timer_duration_spin = QSpinBox()
+        self.timer_duration_spin.setRange(1, 120)
+        self.timer_duration_spin.setSuffix(" min")
+        self.timer_duration_spin.setValue(
+            int(self.config.get("timer_duration_minutes", 25) or 25)
+        )
+
+        self.timer_direction_combo = QComboBox()
+        for label, value in self.TIMER_DIRECTION_OPTIONS:
+            self.timer_direction_combo.addItem(label, value)
+
+        current_direction = self.config.get("timer_direction", "countdown")
+        direction_index = self.timer_direction_combo.findData(current_direction)
+        if direction_index >= 0:
+            self.timer_direction_combo.setCurrentIndex(direction_index)
+
+        self.timer_interval_spin = QSpinBox()
+        self.timer_interval_spin.setRange(5, 5000)
+        self.timer_interval_spin.setSuffix(" ms")
+        self.timer_interval_spin.setValue(
+            int(self.config.get("timer_interval_ms", 250) or 250)
+        )
+
+        self.timer_interval_warning = QLabel(
+            "Your CPU won't be happy, but at least the room will be warm."
+        )
+        self.timer_interval_warning.setStyleSheet("color: palette(mid);")
+        self.timer_interval_warning.setWordWrap(True)
+        self.timer_interval_warning.setVisible(
+            self.timer_interval_spin.value() < 50
+        )
+        self.timer_interval_spin.valueChanged.connect(
+            lambda v: self.timer_interval_warning.setVisible(v < 50)
+        )
+
+        timer_layout.addRow("Duration", self.timer_duration_spin)
+        timer_layout.addRow("Direction", self.timer_direction_combo)
+        timer_layout.addRow("Update interval", self.timer_interval_spin)
+        timer_layout.addRow("", self.timer_interval_warning)
+        timer_group.setLayout(timer_layout)
+        return timer_group
+
     def _build_ui(self) -> None:
         self.setMinimumWidth(520)
 
@@ -334,6 +393,7 @@ class SettingsDialog(QDialog):
         appearance_group = self._build_appearance_group()
         stroke_group = self._build_stroke_group()
         behavior_group = self._build_behavior_group()
+        timer_group = self._build_timer_group()
 
         button_box = QDialogButtonBox()
         self.restore_defaults_button = button_box.addButton(
@@ -351,6 +411,7 @@ class SettingsDialog(QDialog):
         main_layout.addWidget(appearance_group)
         main_layout.addWidget(stroke_group)
         main_layout.addWidget(behavior_group)
+        main_layout.addWidget(timer_group)
         main_layout.addWidget(button_box)
         self.setLayout(main_layout)
 
@@ -380,6 +441,9 @@ class SettingsDialog(QDialog):
                 "update_every_n_reviews": self.update_every_n_reviews_spin.value(),
                 "update_every_percent_total": self.update_every_percent_spin.value(),
                 "update_every_mode": mode,
+                "timer_duration_minutes": self.timer_duration_spin.value(),
+                "timer_direction": self.timer_direction_combo.currentData(),
+                "timer_interval_ms": self.timer_interval_spin.value(),
             }
         )
 
@@ -429,6 +493,17 @@ class SettingsDialog(QDialog):
         linecap_index = self.stroke_linecap_combo.findData(linecap)
         if linecap_index >= 0:
             self.stroke_linecap_combo.setCurrentIndex(linecap_index)
+
+        self.timer_duration_spin.setValue(
+            int(defaults.get("timer_duration_minutes", 25) or 25)
+        )
+        direction = defaults.get("timer_direction", "countdown")
+        direction_index = self.timer_direction_combo.findData(direction)
+        if direction_index >= 0:
+            self.timer_direction_combo.setCurrentIndex(direction_index)
+        self.timer_interval_spin.setValue(
+            int(defaults.get("timer_interval_ms", 250) or 250)
+        )
 
 
 def open_settings(package_name: str) -> None:

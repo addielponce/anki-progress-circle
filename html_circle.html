@@ -93,6 +93,7 @@
         </div>
         <script>
             var circumference = $circumference;
+            var timerId = null;
 
             function updateCircle(dashLength, circ, mainOpacity, maskAttr) {
                 circumference = circ;
@@ -104,6 +105,38 @@
                 progress.setAttribute("stroke-opacity", mainOpacity);
                 maskProgress.setAttribute("stroke-dasharray", dashLength + " " + circ);
                 backCircle.setAttribute("mask", maskAttr);
+            }
+
+            function startTimer(durationMs, direction, intervalMs) {
+                stopTimer();
+                var startTime = Date.now();
+                var progress = document.getElementById("progress-circle");
+                var maskProgress = document.getElementById("mask-progress");
+
+                function tick() {
+                    var elapsed = Date.now() - startTime;
+                    var fraction = Math.min(elapsed / durationMs, 1.0);
+                    if (direction === "countdown") {
+                        fraction = 1.0 - fraction;
+                    }
+                    var dashLength = circumference * fraction;
+                    progress.setAttribute("stroke-dasharray", dashLength + " " + circumference);
+                    maskProgress.setAttribute("stroke-dasharray", dashLength + " " + circumference);
+
+                    if (elapsed >= durationMs) {
+                        stopTimer();
+                    }
+                }
+
+                tick();
+                timerId = setInterval(tick, intervalMs);
+            }
+
+            function stopTimer() {
+                if (timerId !== null) {
+                    clearInterval(timerId);
+                    timerId = null;
+                }
             }
         </script>
     </body>
