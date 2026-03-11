@@ -2,38 +2,38 @@
 <html>
     <head>
         <style>
-            * {{
+            * {
                 margin: 0;
                 padding: 0;
                 box-sizing: border-box;
-            }}
+            }
 
-            html, body {{
+            html, body {
                 width: 100%;
                 height: 100%;
                 overflow: hidden;
                 background: transparent;
-            }}
+            }
 
-            body {{
+            body {
                 display: flex;
                 justify-content: center;
                 align-items: center;
-            }}
+            }
 
-            .progress-container {{
+            .progress-container {
                 width: 95vmin;
                 height: 95vmin;
                 max-width: 95vh;
                 max-height: 95vh;
-            }}
+            }
 
-            svg {{
+            svg {
                 width: 100%;
                 height: 100%;
                 transform: rotate(-90deg);
                 filter: drop-shadow(0 4px 20px rgba(0, 0, 0, 0.3));
-            }}
+            }
         </style>
     </head>
     <body>
@@ -42,50 +42,69 @@
                 <defs>
                     <mask id="mask">
                         <circle
+                            id="mask-back"
                             stroke="white"
-                            stroke-width="{back_stroke_width}"
+                            stroke-width="$back_stroke_width"
                             fill="transparent"
                             cx="50"
                             cy="50"
-                            r="{radius}"
+                            r="$radius"
                         />
                         <circle
+                            id="mask-progress"
                             stroke="black"
-                            stroke-width="{main_stroke_width}"
+                            stroke-width="$main_stroke_width"
                             fill="transparent"
-                            stroke-dasharray="{dash_length} {circumference}"
-                            stroke-linecap="{stroke_linecap}"
+                            stroke-dasharray="$dash_length $circumference"
+                            stroke-linecap="$stroke_linecap"
                             cx="50"
                             cy="50"
-                            r="{radius}"
+                            r="$radius"
                         />
                     </mask>
                 </defs>
-                <!-- Background circle ⚫ -->
+                <!-- Background circle -->
                 <circle
-                    mask="{mask}"
-                    stroke="{back_color}"
-                    stroke-opacity="{back_color_opacity}"
-                    stroke-width="{back_stroke_width}"
+                    id="back-circle"
+                    mask="$mask"
+                    stroke="$back_color"
+                    stroke-opacity="$back_color_opacity"
+                    stroke-width="$back_stroke_width"
                     fill="transparent"
                     cx="50"
                     cy="50"
-                    r="{radius}"
+                    r="$radius"
                 />
-                <!-- Progress circle 🟢 -->
+                <!-- Progress circle -->
                 <circle
+                    id="progress-circle"
                     class="progress-ring"
-                    stroke="{main_color}"
-                    stroke-opacity="{main_color_opacity}"
-                    stroke-width="{main_stroke_width}"
+                    stroke="$main_color"
+                    stroke-opacity="$main_color_opacity"
+                    stroke-width="$main_stroke_width"
                     fill="transparent"
-                    stroke-dasharray="{dash_length} {circumference}"
-                    stroke-linecap="{stroke_linecap}"
+                    stroke-dasharray="$dash_length $circumference"
+                    stroke-linecap="$stroke_linecap"
                     cx="50"
                     cy="50"
-                    r="{radius}"
+                    r="$radius"
                 />
             </svg>
         </div>
+        <script>
+            var circumference = $circumference;
+
+            function updateCircle(dashLength, circ, mainOpacity, maskAttr) {
+                circumference = circ;
+                var progress = document.getElementById("progress-circle");
+                var maskProgress = document.getElementById("mask-progress");
+                var backCircle = document.getElementById("back-circle");
+
+                progress.setAttribute("stroke-dasharray", dashLength + " " + circ);
+                progress.setAttribute("stroke-opacity", mainOpacity);
+                maskProgress.setAttribute("stroke-dasharray", dashLength + " " + circ);
+                backCircle.setAttribute("mask", maskAttr);
+            }
+        </script>
     </body>
 </html>

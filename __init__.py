@@ -20,6 +20,7 @@
 import math
 from dataclasses import dataclass, field
 from pathlib import Path
+from string import Template
 from typing import Any, Optional
 
 from aqt import gui_hooks, mw
@@ -34,7 +35,7 @@ def get_config() -> dict[str, Any]:
     return mw.addonManager.getConfig(__name__)
 
 
-HTML = (Path(__file__).parent / "html_circle.html").read_text()
+HTML = Template((Path(__file__).parent / "html_circle.html").read_text())
 
 
 class ProgressWindow(QDialog):
@@ -59,11 +60,25 @@ class ProgressWindow(QDialog):
         layout.addWidget(self.web)
         self.setLayout(layout)
 
-        self.update_progress(0, 0, 0)
+        self._page_loaded = False
+        self.web.page().loadFinished.connect(self._on_page_loaded)
+        self._pending_js: list[str] = []
 
-    def update_progress(self, done: int, total: int, percent: float) -> None:
-        config = get_config()
+        self._initial_render(0)
 
+    def _on_page_loaded(self, ok: bool) -> None:
+        self._page_loaded = True
+        for js in self._pending_js:
+            self.web.page().runJavaScript(js)
+        self._pending_js.clear()
+
+    def _run_js(self, js: str) -> None:
+        if self._page_loaded:
+            self.web.page().runJavaScript(js)
+        else:
+            self._pending_js.append(js)
+
+    def _compute_svg_params(self, config: dict[str, Any]) -> tuple[float, float]:
         main_stroke_width = config.get("main_circle_stroke_width", 8)
         back_stroke_width = config.get("back_circle_stroke_width", 8)
         max_stroke_width = max(main_stroke_width, back_stroke_width)
@@ -72,19 +87,27 @@ class ProgressWindow(QDialog):
             self.VIEWBOX_CENTER - (max_stroke_width / 2) - self.RADIUS_PADDING,
         )
         circumference = 2 * math.pi * radius
+        return radius, circumference
+
+    def _initial_render(self, percent: float) -> None:
+        config = get_config()
+        radius, circumference = self._compute_svg_params(config)
         dash_length = circumference * (percent / 100)
+
+        main_stroke_width = config.get("main_circle_stroke_width", 8)
+        back_stroke_width = config.get("back_circle_stroke_width", 8)
 
         is_empty = percent == 0 and config["hide_main_circle_at_zero"]
         main_color_opacity = 0 if is_empty else (config["main_color_opacity"] / 100)
 
-        # The mask prevents the two circles from alpha-compositing where they overlap.
-        # It must be disabled when the main circle is invisible to avoid a rendering artifact.
         mask = (
             "url(#mask)" if (config["mask_circles"] and main_color_opacity != 0) else ""
         )
 
+        self._page_loaded = False
+        self._pending_js.clear()
         self.web.setHtml(
-            HTML.format(
+            HTML.safe_substitute(
                 radius=radius,
                 circumference=circumference,
                 dash_length=dash_length,
@@ -98,6 +121,25 @@ class ProgressWindow(QDialog):
                 mask=mask,
             )
         )
+
+    def update_progress(self, percent: float) -> None:
+        config = get_config()
+        _, circumference = self._compute_svg_params(config)
+        dash_length = circumference * (percent / 100)
+
+        is_empty = percent == 0 and config["hide_main_circle_at_zero"]
+        main_color_opacity = 0 if is_empty else (config["main_color_opacity"] / 100)
+
+        mask = (
+            "url(#mask)" if (config["mask_circles"] and main_color_opacity != 0) else ""
+        )
+
+        self._run_js(
+            f"updateCircle({dash_length}, {circumference}, {main_color_opacity}, '{mask}')"
+        )
+
+    def full_redraw(self, percent: float) -> None:
+        self._initial_render(percent)
 
 
 @dataclass
@@ -148,7 +190,7 @@ def toggle_progress_window() -> None:
         _state.progress_window = ProgressWindow(None)
 
     done, total, percent = get_current_progress()
-    _state.progress_window.update_progress(done, total, percent)
+    _state.progress_window.update_progress(percent)
     _mark_rendered_progress(done, total)
 
     if not _state.progress_window.isVisible():
@@ -166,7 +208,15 @@ def _mark_rendered_progress(done: int, total: int) -> None:
 def refresh_overlay() -> None:
     if _state.progress_window is not None and _state.progress_window.isVisible():
         done, total, percent = get_current_progress()
-        _state.progress_window.update_progress(done, total, percent)
+        _state.progress_window.update_progress(percent)
+        _mark_rendered_progress(done, total)
+
+
+def full_redraw_overlay() -> None:
+    """Re-render the overlay from scratch (needed after appearance config changes)."""
+    if _state.progress_window is not None and _state.progress_window.isVisible():
+        done, total, percent = get_current_progress()
+        _state.progress_window.full_redraw(percent)
         _mark_rendered_progress(done, total)
 
 
@@ -211,7 +261,7 @@ def on_review_question_shown(card: Any) -> None:
 
     _state.reviews_since_update += 1
     if force or _state.reviews_since_update >= update_every:
-        _state.progress_window.update_progress(done, total, percent)
+        _state.progress_window.update_progress(percent)
         _mark_rendered_progress(done, total)
 
 
