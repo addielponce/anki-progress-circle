@@ -24,7 +24,7 @@ from string import Template
 from typing import Any, Optional
 
 from aqt import gui_hooks, mw
-from aqt.qt import QDialog, QMenu, Qt, QVBoxLayout, QWebEngineView
+from aqt.qt import QDialog, QMenu, Qt, QTimer, QVBoxLayout, QWebEngineView
 
 from . import settings_gui
 
@@ -141,10 +141,20 @@ class ProgressWindow(QDialog):
     def full_redraw(self, percent: float) -> None:
         self._initial_render(percent)
 
+    def start_timer(
+        self, duration_seconds: int, direction: str, interval_ms: int = 250
+    ) -> None:
+        duration_ms = duration_seconds * 1000
+        self._run_js(f"startTimer({duration_ms}, '{direction}', {interval_ms})")
+
+    def stop_timer(self) -> None:
+        self._run_js("stopTimer()")
+
 
 @dataclass
 class ProgressState:
     progress_window: Optional[ProgressWindow] = None
+    mode: str = "review"
 
     # Tracks the starting card count and completed count per deck for the current session.
     deck_goal: dict[int, int] = field(default_factory=dict)
@@ -153,6 +163,8 @@ class ProgressState:
     reviews_since_update: int = 0
     last_render_done: Optional[int] = None
     last_render_total: Optional[int] = None
+
+    timer_qtimer: Optional[QTimer] = None
 
 
 _state = ProgressState()
@@ -221,11 +233,15 @@ def full_redraw_overlay() -> None:
 
 
 def on_state_change(state: str, old_state: str) -> None:
+    if _state.mode == "timer":
+        return
     if state in ("deckBrowser", "overview", "review"):
         refresh_overlay()
 
 
 def on_review_question_shown(card: Any) -> None:
+    if _state.mode == "timer":
+        return
     if _state.progress_window is None or not _state.progress_window.isVisible():
         return
 
@@ -265,11 +281,65 @@ def on_review_question_shown(card: Any) -> None:
         _mark_rendered_progress(done, total)
 
 
+def _ensure_overlay_visible() -> None:
+    if _state.progress_window is None:
+        _state.progress_window = ProgressWindow(None)
+    if not _state.progress_window.isVisible():
+        done, total, percent = get_current_progress()
+        _state.progress_window.update_progress(percent)
+        _mark_rendered_progress(done, total)
+        _state.progress_window.showMaximized()
+
+
+def start_timer() -> None:
+    config = get_config()
+    duration_minutes = int(config.get("timer_duration_minutes", 25) or 25)
+    direction = config.get("timer_direction", "countdown") or "countdown"
+    interval_ms = int(config.get("timer_interval_ms", 250) or 250)
+    duration_seconds = max(1, duration_minutes) * 60
+
+    _ensure_overlay_visible()
+    _state.mode = "timer"
+    _state.progress_window.start_timer(duration_seconds, direction, interval_ms)
+
+    # Set up a QTimer to revert to review mode when the timer finishes.
+    if _state.timer_qtimer is not None:
+        _state.timer_qtimer.stop()
+    _state.timer_qtimer = QTimer()
+    _state.timer_qtimer.setSingleShot(True)
+    _state.timer_qtimer.timeout.connect(_on_timer_finished)
+    _state.timer_qtimer.start(duration_seconds * 1000)
+
+
+def stop_timer() -> None:
+    if _state.timer_qtimer is not None:
+        _state.timer_qtimer.stop()
+        _state.timer_qtimer = None
+
+    if _state.progress_window is not None:
+        _state.progress_window.stop_timer()
+
+    _state.mode = "review"
+    refresh_overlay()
+
+
+def _on_timer_finished() -> None:
+    _state.timer_qtimer = None
+    _state.mode = "review"
+    refresh_overlay()
+
+
 def add_menu_entry() -> None:
     menu = QMenu("Circular progress ⭕", mw)
     mw.form.menuTools.addMenu(menu)
     toggle_action = menu.addAction("Toggle circular progress")
     toggle_action.triggered.connect(toggle_progress_window)
+
+    menu.addSeparator()
+    start_timer_action = menu.addAction("Start timer")
+    start_timer_action.triggered.connect(start_timer)
+    stop_timer_action = menu.addAction("Stop timer")
+    stop_timer_action.triggered.connect(stop_timer)
 
     menu.addSeparator()
     settings_action = menu.addAction("Circle settings...")
