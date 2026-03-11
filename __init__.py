@@ -145,6 +145,19 @@ class ProgressWindow(QDialog):
         self, duration_seconds: int, direction: str, interval_ms: int = 250
     ) -> None:
         duration_ms = duration_seconds * 1000
+        # Ensure the progress circle is visible even when hide_main_circle_at_zero
+        # has set its opacity to 0 (e.g. when 0 cards have been reviewed).
+        config = get_config()
+        main_color_opacity = config["main_color_opacity"] / 100
+        mask = "url(#mask)" if config["mask_circles"] else ""
+        self._run_js(
+            f"document.getElementById('progress-circle')"
+            f".setAttribute('stroke-opacity', {main_color_opacity})"
+        )
+        self._run_js(
+            f"document.getElementById('back-circle')"
+            f".setAttribute('mask', '{mask}')"
+        )
         self._run_js(f"startTimer({duration_ms}, '{direction}', {interval_ms})")
 
     def stop_timer(self) -> None:
