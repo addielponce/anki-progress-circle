@@ -386,9 +386,9 @@ class SettingsDialog(QDialog):
         mw.addonManager.writeConfig(self.package_name, self.config)
         self.accept()
         # Deferred to avoid a circular import at module load time.
-        from . import refresh_overlay
+        from . import full_redraw_overlay
 
-        refresh_overlay()
+        full_redraw_overlay()
 
     def _restore_defaults(self) -> None:
         defaults = mw.addonManager.addonConfigDefaults(self.package_name)
