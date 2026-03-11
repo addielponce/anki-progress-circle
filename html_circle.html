@@ -8,7 +8,8 @@
                 box-sizing: border-box;
             }
 
-            html, body {
+            html,
+            body {
                 width: 100%;
                 height: 100%;
                 overflow: hidden;
@@ -101,9 +102,15 @@
                 var maskProgress = document.getElementById("mask-progress");
                 var backCircle = document.getElementById("back-circle");
 
-                progress.setAttribute("stroke-dasharray", dashLength + " " + circ);
+                progress.setAttribute(
+                    "stroke-dasharray",
+                    dashLength + " " + circ,
+                );
                 progress.setAttribute("stroke-opacity", mainOpacity);
-                maskProgress.setAttribute("stroke-dasharray", dashLength + " " + circ);
+                maskProgress.setAttribute(
+                    "stroke-dasharray",
+                    dashLength + " " + circ,
+                );
                 backCircle.setAttribute("mask", maskAttr);
             }
 
@@ -120,8 +127,14 @@
                         fraction = 1.0 - fraction;
                     }
                     var dashLength = circumference * fraction;
-                    progress.setAttribute("stroke-dasharray", dashLength + " " + circumference);
-                    maskProgress.setAttribute("stroke-dasharray", dashLength + " " + circumference);
+                    progress.setAttribute(
+                        "stroke-dasharray",
+                        dashLength + " " + circumference,
+                    );
+                    maskProgress.setAttribute(
+                        "stroke-dasharray",
+                        dashLength + " " + circumference,
+                    );
 
                     if (elapsed >= durationMs) {
                         stopTimer();
