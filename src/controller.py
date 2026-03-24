@@ -1,4 +1,4 @@
-from typing import Literal, NamedTuple
+from typing import NamedTuple
 
 from anki.cards import Card
 from aqt import gui_hooks, mw
@@ -18,7 +18,7 @@ class AddonController:
     def __init__(self, package_name: str) -> None:
         self._package_name = package_name
         self._overlay: ProgressOverlay | None = None
-        self._mode: Literal["review", "timer"] = "review"
+        self._mode: str = "review"
 
         self._deck_goal: dict[int, int] = {}
         self._deck_done: dict[int, int] = {}
@@ -28,12 +28,18 @@ class AddonController:
         self._last_render_total: int | None = None
 
         self._timer: QTimer | None = None
+        self._config_cache: Config | None = None
 
     def load_config(self) -> Config:
-        return Config.from_dict(mw.addonManager.getConfig(self._package_name))
+        if self._config_cache is None:
+            self._config_cache = Config.from_dict(
+                mw.addonManager.getConfig(self._package_name)
+            )
+        return self._config_cache
 
     def save_config(self, config: Config) -> None:
         mw.addonManager.writeConfig(self._package_name, config.to_dict())
+        self._config_cache = config
 
     def load_defaults(self) -> Config | None:
         raw = mw.addonManager.addonConfigDefaults(self._package_name)
@@ -83,28 +89,24 @@ class AddonController:
         self._overlay.render(self.load_config(), percent)
         self._mark_rendered(done, total)
 
-    def toggle_overlay(self) -> None:
+    def _show_overlay(self) -> None:
         if self._overlay is None:
             self._overlay = ProgressOverlay(None)
+        config = self.load_config()
+        done, total, percent = self.get_current_progress()
+        self._overlay.render(config, percent)
+        self._mark_rendered(done, total)
+        self._overlay.showMaximized()
 
-        if self._overlay.isVisible():
+    def toggle_overlay(self) -> None:
+        if self._overlay is not None and self._overlay.isVisible():
             self._overlay.close()
         else:
-            config = self.load_config()
-            done, total, percent = self.get_current_progress()
-            self._overlay.render(config, percent)
-            self._mark_rendered(done, total)
-            self._overlay.showMaximized()
+            self._show_overlay()
 
     def _ensure_overlay_visible(self) -> None:
-        if self._overlay is None:
-            self._overlay = ProgressOverlay(None)
-        if not self._overlay.isVisible():
-            config = self.load_config()
-            done, total, percent = self.get_current_progress()
-            self._overlay.render(config, percent)
-            self._mark_rendered(done, total)
-            self._overlay.showMaximized()
+        if self._overlay is None or not self._overlay.isVisible():
+            self._show_overlay()
 
     def _should_force_update(self, config: Config, done: int, total: int) -> bool:
         if self._last_render_done is None or self._last_render_total is None:
@@ -196,6 +198,7 @@ class AddonController:
     def _open_settings(self) -> None:
         from .settings_gui import SettingsDialog
 
+        self._config_cache = None
         config = self.load_config()
         defaults = self.load_defaults()
 
