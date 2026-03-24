@@ -12,7 +12,6 @@
   "update_every_mode": "cards",
   "update_every_n_reviews": 1,
   "update_every_percent_total": 1,
-  "resize": 1,
   "stroke_linecap": "butt",
   "timer_duration_minutes": 25,
   "timer_direction": "countdown",

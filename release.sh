@@ -1,7 +1,14 @@
 #!/usr/bin/env sh
 set -eu
 
-manifest=manifest.json
+addon_directory="src"
+
+manifest="$addon_directory/manifest.json"
+[ -f "$manifest" ] || {
+	echo "Error: must be run from the repo root ($manifest not found)" >&2
+	exit 1
+}
+
 package_name=$(jq -r '.package' "$manifest")
 version=$(jq -r '.version' "$manifest")
 output_addon="v$version-$package_name.ankiaddon"
@@ -11,12 +18,8 @@ output_addon="v$version-$package_name.ankiaddon"
 	exit 1
 }
 
-[ "$(basename "$PWD")" = "$package_name" ] || {
-	echo "Error: must be run from the '$package_name' directory" >&2
-	exit 1
-}
-
 rm -f "$output_addon"
-git ls-files | zip "$output_addon" -@ -x README.md -x release.sh -x .gitignore -x ".github/*"
+
+(cd "$addon_directory" && zip -vr "../$output_addon" .)
 
 printf 'Created %s\n' "$output_addon"
