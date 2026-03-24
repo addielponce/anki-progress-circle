@@ -51,8 +51,10 @@ class ProgressOverlay(QDialog):
         radius = max(1, self._VIEWBOX_CENTER - (max_stroke / 2) - self._RADIUS_PADDING)
         return radius, 2 * math.pi * radius
 
-    def _resolve_appearance(self, config: Config, percent: float) -> tuple[float, str]:
-        hidden = percent == 0 and config.hide_main_circle_at_zero
+    def _resolve_appearance(
+        self, config: Config, percent: float, *, force_visible: bool = False
+    ) -> tuple[float, str]:
+        hidden = not force_visible and percent == 0 and config.hide_main_circle_at_zero
         opacity = 0.0 if hidden else config.main_color_opacity / 100
         mask = "url(#mask)" if config.mask_circles and opacity != 0 else ""
         return opacity, mask
@@ -80,25 +82,23 @@ class ProgressOverlay(QDialog):
             )
         )
 
-        def update_progress(self, config: Config, percent: float) -> None:
-            _, circumference = self._compute_geometry(config)
-            dash_length = circumference * (percent / 100)
-            opacity, mask = self._resolve_appearance(config, percent)
-            self._run_js(f"updateCircle({dash_length}, {circumference}, {opacity}, '{mask}')")
+    def update_progress(self, config: Config, percent: float) -> None:
+        _, circumference = self._compute_geometry(config)
+        dash_length = circumference * (percent / 100)
+        opacity, mask = self._resolve_appearance(config, percent)
+        self._run_js(f"updateCircle({dash_length}, {circumference}, {opacity}, '{mask}')")
 
-        def start_timer(self, config: Config, duration_seconds: int) -> None:
-            # Force the progress circle visible even when hide_main_circle_at_zero
-            # has set its opacity to 0.
-            opacity = config.main_color_opacity / 100
-            mask = "url(#mask)" if config.mask_circles else ""
-            self._run_js(
-                f"document.getElementById('progress-circle').setAttribute('stroke-opacity', {opacity})"
-            )
-            self._run_js(f"document.getElementById('back-circle').setAttribute('mask', '{mask}')")
-            self._run_js(
-                f"startTimer({duration_seconds * 1000}, "
-                f"'{config.timer_direction}', {config.timer_interval_ms})"
-            )
+    def start_timer(self, config: Config, duration_seconds: int) -> None:
+        # force_visible=True so hide_main_circle_at_zero doesn't suppress the circle.
+        opacity, mask = self._resolve_appearance(config, 0.0, force_visible=True)
+        self._run_js(
+            f"document.getElementById('progress-circle').setAttribute('stroke-opacity', {opacity})"
+        )
+        self._run_js(f"document.getElementById('back-circle').setAttribute('mask', '{mask}')")
+        self._run_js(
+            f"startTimer({duration_seconds * 1000}, "
+            f"'{config.timer_direction}', {config.timer_interval_ms})"
+        )
 
-        def stop_timer(self) -> None:
-            self._run_js("stopTimer()")
+    def stop_timer(self) -> None:
+        self._run_js("stopTimer()")
