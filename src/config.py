@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import enum
 from dataclasses import asdict, dataclass, fields
 from typing import Any
